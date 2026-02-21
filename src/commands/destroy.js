@@ -53,21 +53,28 @@ export async function destroy(name) {
 
   // ── Delete Mattermost bot account via API ─────────────────
   if (bot.mattermost) {
-    const homeConfig   = loadHomeConfig();
+    const homeConfig    = loadHomeConfig();
     const mattermostUrl = typeof bot.mattermost === 'string' ? bot.mattermost : homeConfig.mattermostUrl;
     const adminToken    = homeConfig.mattermostAdminToken;
 
     if (mattermostUrl && adminToken) {
-      s.start('Deleting Mattermost bot account...');
-      const result = await deleteMattermostBot({ botName: name, mattermostUrl, adminToken });
-      if (result.success && result.permanent) {
-        s.stop('Mattermost bot account permanently deleted');
-      } else if (result.success) {
-        s.stop('Mattermost bot account deactivated');
-        p.log.warn('Server does not have EnableAPIUserDeletion set — account was deactivated, not permanently deleted.');
-      } else {
-        s.stop(`Could not remove Mattermost bot account: ${result.error}`);
-        p.log.warn(`Remove it manually via the API: DELETE /api/v4/users/<id>?permanent=true`);
+      const deleteMM = guard(await p.confirm({
+        message: 'Delete the Mattermost bot account?',
+        initialValue: true,
+      }));
+
+      if (deleteMM) {
+        s.start('Deleting Mattermost bot account...');
+        const result = await deleteMattermostBot({ botName: name, mattermostUrl, adminToken });
+        if (result.success && result.permanent) {
+          s.stop('Mattermost bot account permanently deleted');
+        } else if (result.success) {
+          s.stop('Mattermost bot account deactivated');
+          p.log.warn('Server does not have EnableAPIUserDeletion set — account was deactivated, not permanently deleted.');
+        } else {
+          s.stop(`Could not remove Mattermost bot account: ${result.error}`);
+          p.log.warn(`Remove it manually via the API: DELETE /api/v4/users/<id>?permanent=true`);
+        }
       }
     } else {
       p.log.warn('Mattermost admin token not found — delete the bot account manually via the API.');

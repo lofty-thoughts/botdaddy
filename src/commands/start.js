@@ -5,82 +5,81 @@ import {
   checkDocker, containerExists, containerRunning,
   startContainer, runContainer, ensureNetwork,
 } from '../lib/docker.js';
+import { p } from '../lib/prompt.js';
 
 export async function start(name) {
   const bot = findBot(name);
   if (!bot) {
-    console.error(`  Error: Bot '${name}' not found in botdaddy.json`);
+    p.log.error(`Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 
   if (!checkDocker()) {
-    console.error('  Error: Docker is not running.');
+    p.log.error('Docker is not running.');
     process.exit(1);
   }
 
-  const stack = getStack();
+  p.intro(`Start: ${name}`);
+
+  const stack         = getStack();
   const containerName = getContainerName(name);
-  const botDir = getBotDir(name);
-  const networkName = `${stack.namespace}-net`;
-  const orbDomain = `${stack.namespace}-${name}.orb.local`;
+  const botDir        = getBotDir(name);
+  const networkName   = `${stack.namespace}-net`;
+  const orbDomain     = `${stack.namespace}-${name}.orb.local`;
 
   ensureNetwork(networkName);
 
   if (containerRunning(containerName)) {
-    console.log(`  Bot '${name}' is already running.`);
-    console.log(`  Gateway: http://localhost:${bot.gatewayPort}`);
-    console.log(`  OrbStack: https://${orbDomain}`);
+    p.log.info(`Bot '${name}' is already running.`);
+    p.outro(`Gateway: http://localhost:${bot.gatewayPort}\n  OrbStack: https://${orbDomain}`);
     return;
   }
 
+  const s = p.spinner();
+
   if (containerExists(containerName)) {
-    // Container exists but stopped — restart it
-    console.log(`  Starting stopped container '${containerName}'...`);
+    s.start(`Starting container...`);
     startContainer(containerName);
+    s.stop('Container started');
   } else {
-    // No container — create and run
-    console.log(`  Creating and starting container '${containerName}'...`);
+    s.start(`Creating container...`);
     runContainer({
       containerName,
-      imageName: stack.imageName,
+      imageName:    stack.imageName,
       botDir,
-      envFile: join(botDir, '.env'),
-      gatewayPort: bot.gatewayPort,
+      envFile:      join(botDir, '.env'),
+      gatewayPort:  bot.gatewayPort,
       devPortStart: bot.devPortStart,
-      devPortEnd: bot.devPortEnd,
-      network: networkName,
+      devPortEnd:   bot.devPortEnd,
+      network:      networkName,
       orbDomain,
     });
+    s.stop('Container created');
   }
 
-  // Wait for gateway to respond
-  const gwUrl = `http://localhost:${bot.gatewayPort}`;
-  const maxWait = 60_000;
-  const startTime = Date.now();
-  process.stdout.write('  Waiting for gateway');
-  let ready = false;
+  // Wait for gateway
+  const gwUrl    = `http://localhost:${bot.gatewayPort}`;
+  const maxWait  = 60_000;
+  const start    = Date.now();
+  let ready      = false;
 
-  while (Date.now() - startTime < maxWait) {
+  s.start('Waiting for gateway...');
+  while (Date.now() - start < maxWait) {
     try {
-      execSync(`curl -sfo /dev/null -w '%{http_code}' ${gwUrl} 2>/dev/null | grep -q 200`, {
-        stdio: 'pipe',
-      });
+      execSync(`curl -sfo /dev/null ${gwUrl}`, { stdio: 'pipe' });
       ready = true;
       break;
     } catch {
-      process.stdout.write('.');
       await new Promise(r => setTimeout(r, 2000));
     }
   }
-  console.log(ready ? ' ready' : '');
 
-  if (!ready) {
-    console.log('  Warning: Gateway not responding yet. It may still be starting.');
-    console.log(`  Check logs: botdaddy logs ${name}`);
+  if (ready) {
+    s.stop('Gateway ready');
+  } else {
+    s.stop('Gateway not responding — it may still be starting');
+    p.log.warn(`Check logs: botdaddy logs ${name}`);
   }
 
-  console.log(`\n  Bot '${name}' is running.`);
-  console.log(`  Gateway: ${gwUrl}`);
-  console.log(`  OrbStack: https://${orbDomain}`);
-  console.log(`  Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`);
+  p.outro(`Bot '${name}' running.\n\n  Gateway:   ${gwUrl}\n  OrbStack:  https://${orbDomain}\n  Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`);
 }

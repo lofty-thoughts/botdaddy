@@ -31,7 +31,7 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
 
   const bot = findBot(name);
   if (!bot) {
-    console.error(`Error: Bot '${name}' not found in botdaddy.json`);
+    p.log.error(`Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 
@@ -42,7 +42,7 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
 
   // ── Prerequisites ──────────────────────────────────────────
   if (!checkDocker()) {
-    console.error('Error: Docker is not running.');
+    p.log.error('Docker is not running.');
     process.exit(1);
   }
 

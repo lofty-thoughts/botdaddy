@@ -20,7 +20,7 @@ export async function config(name) {
   if (!existing) {
     const nameErr = validateName(name);
     if (nameErr) {
-      console.error(`Error: ${nameErr}`);
+      p.log.error(nameErr);
       process.exit(1);
     }
   }

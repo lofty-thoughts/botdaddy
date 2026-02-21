@@ -55,8 +55,6 @@ export async function provisionMattermostBot({ botName, mattermostUrl, adminToke
     }
     const { token } = await tokenRes.json();
 
-    const prefix = token.slice(0, 8);
-    console.log(`  Mattermost bot provisioned (@${botName}, token: ${prefix}...)`);
     return { success: true, token, baseUrl: url };
   } catch (err) {
     return { success: false, error: err.message };

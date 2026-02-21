@@ -2,15 +2,16 @@ import { findBot, getStack, getBotDir } from '../lib/config.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
+import { p } from '../lib/prompt.js';
 
 export async function dashboard(name) {
   const bot = findBot(name);
   if (!bot) {
-    console.error(`  Error: Bot '${name}' not found in botdaddy.json`);
+    p.log.error(`Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 
-  const stack = getStack();
+  const stack      = getStack();
   const configPath = join(getBotDir(name), 'openclaw.json');
   let token = '';
   try {
@@ -19,12 +20,12 @@ export async function dashboard(name) {
   } catch {}
 
   const orbDomain = `${stack.namespace}-${name}.orb.local`;
-  const url = `https://${orbDomain}/#token=${token}`;
+  const url       = `https://${orbDomain}/#token=${token}`;
 
-  console.log(`  ${url}`);
+  p.log.info(url);
   try {
-    execSync(`open "${url}"`, { stdio: 'ignore' });
+    execSync(`open "${url}"`, { stdio: 'pipe' });
   } catch {
-    console.log('  Could not open browser automatically.');
+    p.log.warn('Could not open browser automatically.');
   }
 }

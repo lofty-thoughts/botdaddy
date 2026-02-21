@@ -7,7 +7,7 @@ import { apply } from './apply.js';
 export async function mattermost(name) {
   const bot = findBot(name);
   if (!bot) {
-    console.error(`Error: Bot '${name}' not found in botdaddy.json`);
+    p.log.error(`Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 

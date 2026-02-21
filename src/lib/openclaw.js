@@ -31,8 +31,8 @@ export function fixConfigAfterOnboard({ botDir, originalToken }) {
         writeFileSync(envPath, envContent);
       }
     }
-  } catch (err) {
-    console.log(`  Warning: Could not fix config after onboard: ${err.message}`);
+  } catch {
+    // Non-fatal — apply will still proceed
   }
 
   return actualToken;

@@ -6,7 +6,7 @@ import { writeChannelCredential } from '../lib/openclaw.js';
 export async function telegram(name) {
   const bot = findBot(name);
   if (!bot) {
-    console.error(`Error: Bot '${name}' not found in botdaddy.json`);
+    p.log.error(`Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 

@@ -63,12 +63,14 @@ export async function provisionMattermostBot({ botName, mattermostUrl, adminToke
 
 /**
  * Delete a Mattermost bot account via the MM REST API.
+ * Attempts permanent deletion (?permanent=true) first — requires EnableAPIUserDeletion
+ * to be on in the server config. Falls back to deactivation if not permitted.
  *
  * @param {object} opts
  * @param {string} opts.botName
  * @param {string} opts.mattermostUrl
  * @param {string} opts.adminToken
- * @returns {{ success: boolean, error?: string }}
+ * @returns {{ success: boolean, permanent: boolean, error?: string }}
  */
 export async function deleteMattermostBot({ botName, mattermostUrl, adminToken }) {
   const url     = mattermostUrl.replace(/\/$/, '');
@@ -78,23 +80,33 @@ export async function deleteMattermostBot({ botName, mattermostUrl, adminToken }
     // Look up user ID by username
     const lookupRes = await fetch(`${url}/api/v4/users/username/${botName}`, { headers });
     if (!lookupRes.ok) {
-      if (lookupRes.status === 404) return { success: true }; // Already gone
+      if (lookupRes.status === 404) return { success: true, permanent: true }; // Already gone
       throw new Error(`User lookup failed (${lookupRes.status})`);
     }
     const { id } = await lookupRes.json();
 
-    // Permanently delete the user
-    const deleteRes = await fetch(`${url}/api/v4/users/${id}`, {
+    // Attempt permanent deletion (requires EnableAPIUserDeletion on server)
+    const permanentRes = await fetch(`${url}/api/v4/users/${id}?permanent=true`, {
       method: 'DELETE',
       headers,
     });
-    if (!deleteRes.ok) {
-      const body = await deleteRes.text();
-      throw new Error(`Delete failed (${deleteRes.status}): ${body}`);
+
+    if (permanentRes.ok) {
+      return { success: true, permanent: true };
     }
 
-    return { success: true };
+    // Fall back to deactivation if permanent deletion is not enabled
+    const deactivateRes = await fetch(`${url}/api/v4/users/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!deactivateRes.ok) {
+      const body = await deactivateRes.text();
+      throw new Error(`Deactivation failed (${deactivateRes.status}): ${body}`);
+    }
+
+    return { success: true, permanent: false };
   } catch (err) {
-    return { success: false, error: err.message };
+    return { success: false, permanent: false, error: err.message };
   }
 }

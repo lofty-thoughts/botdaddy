@@ -60,11 +60,14 @@ export async function destroy(name) {
     if (mattermostUrl && adminToken) {
       s.start('Deleting Mattermost bot account...');
       const result = await deleteMattermostBot({ botName: name, mattermostUrl, adminToken });
-      if (result.success) {
-        s.stop('Mattermost bot account deleted');
+      if (result.success && result.permanent) {
+        s.stop('Mattermost bot account permanently deleted');
+      } else if (result.success) {
+        s.stop('Mattermost bot account deactivated');
+        p.log.warn('Server does not have EnableAPIUserDeletion set — account was deactivated, not permanently deleted.');
       } else {
-        s.stop(`Could not delete Mattermost bot account: ${result.error}`);
-        p.log.warn(`Delete it manually via the Mattermost API: DELETE /api/v4/users/<id>`);
+        s.stop(`Could not remove Mattermost bot account: ${result.error}`);
+        p.log.warn(`Remove it manually via the API: DELETE /api/v4/users/<id>?permanent=true`);
       }
     } else {
       p.log.warn('Mattermost admin token not found — delete the bot account manually via the API.');

@@ -216,10 +216,11 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
 
   // ── Restart container if running ───────────────────────────
   if (containerRunning(containerName)) {
-    log(`Restarting '${containerName}'...`);
+    const s = quiet ? null : p.spinner();
+    s?.start(`Restarting ${containerName}...`);
     stopContainer(containerName);
     startContainer(containerName);
-    log('Restarted');
+    s?.stop('Restarted');
   } else if (containerExists(containerName)) {
     log(`Container stopped. Start with: botdaddy start ${name}`);
   } else {

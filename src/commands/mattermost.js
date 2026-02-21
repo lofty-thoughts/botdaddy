@@ -1,5 +1,5 @@
 import { findBot, getBotDir, loadHomeConfig, saveHomeConfig, loadRegistry, saveRegistry } from '../lib/config.js';
-import { makeRL, ask, askSecret } from '../lib/prompt.js';
+import { p, guard } from '../lib/prompt.js';
 import { provisionMattermostBot } from '../lib/mattermost.js';
 import { writeChannelCredential } from '../lib/openclaw.js';
 import { apply } from './apply.js';
@@ -7,93 +7,108 @@ import { apply } from './apply.js';
 export async function mattermost(name) {
   const bot = findBot(name);
   if (!bot) {
-    console.error(`  Error: Bot '${name}' not found in botdaddy.json`);
+    console.error(`Error: Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 
-  const rl = makeRL();
-  const homeConfig = loadHomeConfig();
+  p.intro(`Mattermost: ${name}`);
 
-  // Collect MM credentials — global defaults with per-bot override
-  const savedUrl = homeConfig.mattermostUrl || '';
-  const savedToken = homeConfig.mattermostAdminToken || '';
-  let mattermostUrl = '';
-  let adminToken = '';
+  const homeConfig   = loadHomeConfig();
+  const savedUrl     = homeConfig.mattermostUrl || '';
+  const savedToken   = homeConfig.mattermostAdminToken || '';
+  let mattermostUrl  = '';
+  let adminToken     = '';
 
+  // ── URL ────────────────────────────────────────────────────
   if (savedUrl) {
-    const useDefault = await ask(rl, `  Use saved Mattermost URL (${savedUrl})?`, 'y');
-    if (useDefault.toLowerCase() === 'y') {
+    const useSaved = guard(await p.confirm({
+      message: `Use saved Mattermost URL (${savedUrl})?`,
+      initialValue: true,
+    }));
+    if (useSaved) {
       mattermostUrl = savedUrl;
     } else {
-      mattermostUrl = await ask(rl, '  Mattermost URL (https://...)');
+      mattermostUrl = guard(await p.text({ message: 'Mattermost URL (https://...)' }));
       if (mattermostUrl && mattermostUrl !== savedUrl) {
-        const saveGlobal = await ask(rl, '  Save as new default for future bots?', 'n');
-        if (saveGlobal.toLowerCase() === 'y') saveHomeConfig({ mattermostUrl: mattermostUrl });
+        const save = guard(await p.confirm({
+          message: 'Save as new default for future bots?',
+          initialValue: false,
+        }));
+        if (save) saveHomeConfig({ mattermostUrl });
       }
     }
   } else {
-    mattermostUrl = await ask(rl, '  Mattermost URL (https://...)');
+    mattermostUrl = guard(await p.text({ message: 'Mattermost URL (https://...)' }));
     if (mattermostUrl) {
-      const save = await ask(rl, '  Save as default for future bots?', 'y');
-      if (save.toLowerCase() === 'y') saveHomeConfig({ mattermostUrl: mattermostUrl });
+      const save = guard(await p.confirm({
+        message: 'Save as default for future bots?',
+        initialValue: true,
+      }));
+      if (save) saveHomeConfig({ mattermostUrl });
     }
   }
 
+  // ── Admin token ────────────────────────────────────────────
   if (savedToken) {
-    const useDefault = await ask(rl, `  Use saved admin token (${savedToken.slice(0, 8)}...)?`, 'y');
-    if (useDefault.toLowerCase() === 'y') {
+    const useSaved = guard(await p.confirm({
+      message: `Use saved admin token (${savedToken.slice(0, 8)}...)?`,
+      initialValue: true,
+    }));
+    if (useSaved) {
       adminToken = savedToken;
     } else {
-      adminToken = await askSecret('  Mattermost System Admin token');
+      adminToken = guard(await p.password({ message: 'Mattermost System Admin token' }));
       if (adminToken && adminToken !== savedToken) {
-        const saveGlobal = await ask(rl, '  Save as new default for future bots?', 'n');
-        if (saveGlobal.toLowerCase() === 'y') saveHomeConfig({ mattermostAdminToken: adminToken });
+        const save = guard(await p.confirm({
+          message: 'Save as new default for future bots?',
+          initialValue: false,
+        }));
+        if (save) saveHomeConfig({ mattermostAdminToken: adminToken });
       }
     }
   } else {
-    adminToken = await askSecret('  Mattermost System Admin token');
+    adminToken = guard(await p.password({ message: 'Mattermost System Admin token' }));
     if (adminToken) {
-      const save = await ask(rl, '  Save as default for future bots?', 'y');
-      if (save.toLowerCase() === 'y') saveHomeConfig({ mattermostAdminToken: adminToken });
+      const save = guard(await p.confirm({
+        message: 'Save as default for future bots?',
+        initialValue: true,
+      }));
+      if (save) saveHomeConfig({ mattermostAdminToken: adminToken });
     }
   }
 
-  rl.close();
-
   if (!mattermostUrl || !adminToken) {
-    console.error('  Error: Mattermost URL and admin token are both required.');
+    p.cancel('Mattermost URL and admin token are both required.');
     process.exit(1);
   }
 
-  // Provision the bot account via MM API
-  console.log('  Provisioning Mattermost bot...');
-  const result = await provisionMattermostBot({
-    botName: name,
-    mattermostUrl,
-    adminToken,
-  });
+  // ── Provision ──────────────────────────────────────────────
+  const s = p.spinner();
+  s.start('Provisioning Mattermost bot...');
+  const result = await provisionMattermostBot({ botName: name, mattermostUrl, adminToken });
 
   if (!result.success) {
-    console.error(`  Error: ${result.error}`);
+    s.stop(`Provisioning failed: ${result.error}`);
     process.exit(1);
   }
 
-  // Write credentials to openclaw.json channel config
+  s.stop('Mattermost bot provisioned');
+
   writeChannelCredential(getBotDir(name), 'mattermost', {
     botToken: result.token,
-    baseUrl: result.baseUrl,
+    baseUrl:  result.baseUrl,
   });
 
-  // Update botdaddy.json with MM URL
-  const reg = loadRegistry();
+  const reg   = loadRegistry();
   const entry = reg.bots.find(b => b.name === name);
   if (entry) {
     entry.mattermost = mattermostUrl;
     saveRegistry(reg);
   }
 
-  // Apply config (enables plugin, restarts if running)
-  await apply(name);
+  s.start('Applying config...');
+  await apply(name, { quiet: true });
+  s.stop('Config applied');
 
-  console.log(`\n  Mattermost configured for '${name}'.`);
+  p.outro(`Mattermost configured for '${name}'.`);
 }

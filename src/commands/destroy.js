@@ -1,53 +1,56 @@
 import { rmSync } from 'node:fs';
 import { findBot, removeBot, getBotDir, getContainerName } from '../lib/config.js';
 import { containerExists, containerRunning, stopContainer, removeContainer } from '../lib/docker.js';
-import { makeRL, ask } from '../lib/prompt.js';
+import { p, guard } from '../lib/prompt.js';
 
 export async function destroy(name) {
   const bot = findBot(name);
   if (!bot) {
-    console.error(`  Error: Bot '${name}' not found in botdaddy.json`);
+    console.error(`Error: Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 
-  const rl = makeRL();
+  p.intro(`Destroy bot: ${name}`);
 
-  // Confirm by typing bot name
-  const confirm = await ask(rl, `  Type '${name}' to confirm destruction`);
+  const confirm = guard(await p.text({
+    message: `Type '${name}' to confirm destruction`,
+    validate: v => v !== name ? `Type exactly '${name}' to confirm` : undefined,
+  }));
+
   if (confirm !== name) {
-    console.log('  Aborted.');
-    rl.close();
+    p.cancel('Aborted.');
     return;
   }
 
   const containerName = getContainerName(name);
+  const s = p.spinner();
 
-  // Stop if running
   if (containerRunning(containerName)) {
-    console.log(`  Stopping '${containerName}'...`);
+    s.start(`Stopping ${containerName}...`);
     stopContainer(containerName);
+    s.stop('Stopped');
   }
 
-  // Remove container
   if (containerExists(containerName)) {
-    console.log(`  Removing container '${containerName}'...`);
+    s.start(`Removing container ${containerName}...`);
     removeContainer(containerName);
+    s.stop('Container removed');
   }
 
-  // Optionally delete files
-  const botDir = getBotDir(name);
-  const deleteFiles = await ask(rl, `  Delete ${botDir}?`, 'n');
-  if (deleteFiles.toLowerCase() === 'y') {
+  const botDir    = getBotDir(name);
+  const deleteDir = guard(await p.confirm({
+    message: `Delete ${botDir}?`,
+    initialValue: false,
+  }));
+
+  if (deleteDir) {
     rmSync(botDir, { recursive: true, force: true });
-    console.log('  Files deleted.');
+    p.log.success('Files deleted');
   } else {
-    console.log('  Files kept.');
+    p.log.info('Files kept');
   }
 
-  rl.close();
-
-  // Remove from registry
   removeBot(name);
-  console.log(`  Bot '${name}' destroyed.`);
-  console.log('  Note: Mattermost bot account (if any) must be deleted manually.');
+
+  p.outro(`Bot '${name}' destroyed. Mattermost bot account (if any) must be deleted manually.`);
 }

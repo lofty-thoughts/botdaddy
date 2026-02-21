@@ -26,8 +26,11 @@ export function run() {
     .command('apply <name>')
     .description('Apply botdaddy.json config to a bot (scaffold, write configs, restart)')
     .action(async (name) => {
+      const { p }     = await import('./lib/prompt.js');
       const { apply } = await import('./commands/apply.js');
+      p.intro(`Apply: ${name}`);
       await apply(name);
+      p.outro('Done.');
     });
 
   program

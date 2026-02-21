@@ -13,35 +13,45 @@ import {
 import { SEED_ROOT, genToken, today, templateFile } from '../lib/scaffold.js';
 import { fixConfigAfterOnboard } from '../lib/openclaw.js';
 import { getProvider } from '../lib/providers.js';
+import { p } from '../lib/prompt.js';
 
 /**
  * Apply config from botdaddy.json to a bot's files and container.
  * Idempotent — safe to run repeatedly.
+ *
+ * @param {string} name
+ * @param {{ quiet?: boolean, spinner?: object }} opts
+ *   quiet   — suppress all output (used when called from config wizard)
+ *   spinner — an already-running clack spinner to reuse for step labels
  */
-export async function apply(name, { quiet = false } = {}) {
-  const log = quiet ? () => {} : (...args) => console.log(...args);
+export async function apply(name, { quiet = false, spinner = null } = {}) {
+  const log  = quiet ? () => {} : (...a) => p.log.step(a.join(' '));
+  const spin = quiet ? { start: () => {}, stop: () => {} }
+    : spinner ?? { start: () => {}, stop: () => {} };
 
   const bot = findBot(name);
   if (!bot) {
-    console.error(`  Error: Bot '${name}' not found in botdaddy.json`);
+    console.error(`Error: Bot '${name}' not found in botdaddy.json`);
     process.exit(1);
   }
 
-  const stack = getStack();
-  const botDir = getBotDir(name);
+  const stack         = getStack();
+  const botDir        = getBotDir(name);
   const containerName = getContainerName(name);
-  const homeConfig = loadHomeConfig();
+  const homeConfig    = loadHomeConfig();
 
   // ── Prerequisites ──────────────────────────────────────────
   if (!checkDocker()) {
-    console.error('  Error: Docker is not running.');
+    console.error('Error: Docker is not running.');
     process.exit(1);
   }
 
   const dockerDir = join(PROJECT_ROOT, 'docker');
   if (!imageExists(stack.imageName)) {
-    log(`  Building image '${stack.imageName}'...`);
+    const s = quiet ? null : p.spinner();
+    s?.start(`Building image '${stack.imageName}'...`);
     buildImage(stack.imageName, dockerDir);
+    s?.stop(`Built image '${stack.imageName}'`);
   }
 
   const networkName = `${stack.namespace}-net`;
@@ -49,44 +59,41 @@ export async function apply(name, { quiet = false } = {}) {
 
   // ── Scaffold directories ───────────────────────────────────
   const workspaceDir = join(botDir, 'workspace');
-  const memoryDir = join(workspaceDir, 'memory');
-  const isNew = !existsSync(workspaceDir);
+  const memoryDir    = join(workspaceDir, 'memory');
+  const isNew        = !existsSync(workspaceDir);
 
   mkdirSync(memoryDir, { recursive: true });
 
-  // Copy seed files only if workspace is fresh
   if (isNew) {
     const baseDir = join(SEED_ROOT, 'base');
     if (existsSync(baseDir)) {
       const vars = {
-        AGENT_NAME: name,
-        DATE: today,
+        AGENT_NAME:              name,
+        DATE:                    today,
         BOTDADDY_DEV_PORT_START: String(bot.devPortStart),
-        BOTDADDY_DEV_PORT_END: String(bot.devPortEnd),
-        BOTDADDY_GATEWAY_PORT: String(bot.gatewayPort),
+        BOTDADDY_DEV_PORT_END:   String(bot.devPortEnd),
+        BOTDADDY_GATEWAY_PORT:   String(bot.gatewayPort),
       };
       for (const f of readdirSync(baseDir)) {
         templateFile(join(baseDir, f), join(workspaceDir, f), vars);
       }
-      log('  Scaffolded workspace seed files');
+      log('Scaffolded workspace seed files');
     }
 
-    // git init workspace
     try {
       execSync('git init', { cwd: workspaceDir, stdio: 'pipe' });
       execSync('git add -A', { cwd: workspaceDir, stdio: 'pipe' });
       execSync('git commit -m "Initial workspace"', { cwd: workspaceDir, stdio: 'pipe' });
-      log('  Initialized git in workspace');
+      log('Initialized git in workspace');
     } catch { /* non-fatal */ }
   }
 
   // ── Resolve provider + secrets ─────────────────────────────
-  const provider = (bot.provider || 'anthropic').toLowerCase().replace(/\s*\(.*\)/, '');
+  const provider    = (bot.provider || 'anthropic').toLowerCase().replace(/\s*\(.*\)/, '');
   const providerDef = getProvider(provider);
-  let anthropicKey = '';
+  let anthropicKey  = '';
 
   if (providerDef.needsApiKey) {
-    // Per-bot key (from config wizard) takes priority over global default
     anthropicKey = process.env._BOTDADDY_ANTHROPIC_KEY || homeConfig.anthropicKey || '';
   }
 
@@ -95,35 +102,30 @@ export async function apply(name, { quiet = false } = {}) {
   let gatewayToken;
 
   if (existsSync(envPath)) {
-    // Preserve existing .env, patch non-secret fields
-    const env = readFileSync(envPath, 'utf8');
+    const env        = readFileSync(envPath, 'utf8');
     const tokenMatch = env.match(/^OPENCLAW_GATEWAY_TOKEN=(.+)$/m);
-    gatewayToken = tokenMatch?.[1] || genToken();
+    gatewayToken     = tokenMatch?.[1] || genToken();
 
-    // Patch provider key if we have one and it's not already set
     let updated = env;
     if (anthropicKey) {
       updated = updated.replace(/^ANTHROPIC_API_KEY=.*$/m, `ANTHROPIC_API_KEY=${anthropicKey}`);
     }
-    // Ensure port range env vars are current
     updated = updated.replace(/^BOTDADDY_DEV_PORT_START=.*$/m, `BOTDADDY_DEV_PORT_START=${bot.devPortStart}`);
-    updated = updated.replace(/^BOTDADDY_DEV_PORT_END=.*$/m, `BOTDADDY_DEV_PORT_END=${bot.devPortEnd}`);
-
+    updated = updated.replace(/^BOTDADDY_DEV_PORT_END=.*$/m,   `BOTDADDY_DEV_PORT_END=${bot.devPortEnd}`);
     writeFileSync(envPath, updated);
   } else {
-    // Fresh .env from template
-    gatewayToken = genToken();
-    const seedEnv = join(SEED_ROOT, 'env.template');
-    let envContent = readFileSync(seedEnv, 'utf8');
-    envContent = envContent.replaceAll('{{AGENT_NAME}}', name);
-    envContent = envContent.replaceAll('{{DATE}}', today);
-    envContent = envContent.replaceAll('{{GATEWAY_TOKEN}}', gatewayToken);
+    gatewayToken     = genToken();
+    const seedEnv    = join(SEED_ROOT, 'env.template');
+    let envContent   = readFileSync(seedEnv, 'utf8');
+    envContent = envContent.replaceAll('{{AGENT_NAME}}',              name);
+    envContent = envContent.replaceAll('{{DATE}}',                    today);
+    envContent = envContent.replaceAll('{{GATEWAY_TOKEN}}',           gatewayToken);
     envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_START}}', String(bot.devPortStart));
-    envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_END}}', String(bot.devPortEnd));
+    envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_END}}',   String(bot.devPortEnd));
     if (anthropicKey) envContent = envContent.replace('ANTHROPIC_API_KEY=', `ANTHROPIC_API_KEY=${anthropicKey}`);
     writeFileSync(envPath, envContent);
     chmodSync(envPath, 0o600);
-    log('  Generated .env');
+    log('Generated .env');
   }
 
   // ── Generate / update openclaw.json ────────────────────────
@@ -133,31 +135,26 @@ export async function apply(name, { quiet = false } = {}) {
   if (existsSync(configPath)) {
     config = JSON.parse(readFileSync(configPath, 'utf8'));
   } else {
-    // Start from template
     const tmpl = readFileSync(join(SEED_ROOT, 'openclaw.json.template'), 'utf8');
-    config = JSON.parse(tmpl.replaceAll('{{OPENCLAW_GATEWAY_TOKEN}}', gatewayToken));
-    log('  Created openclaw.json');
+    config     = JSON.parse(tmpl.replaceAll('{{OPENCLAW_GATEWAY_TOKEN}}', gatewayToken));
+    log('Created openclaw.json');
   }
 
   // Ensure gateway config
   if (!config.gateway) config.gateway = {};
   config.gateway.trustedProxies = config.gateway.trustedProxies || ['192.168.0.0/16'];
-  // Keep existing token if present, otherwise use ours
   if (!config.gateway.auth?.token) {
     if (!config.gateway.auth) config.gateway.auth = {};
-    config.gateway.auth.mode = 'token';
+    config.gateway.auth.mode  = 'token';
     config.gateway.auth.token = gatewayToken;
   }
 
-  // Provider-specific model config — no branching, driven by providers.js
-  const model = bot.model || providerDef.defaultModel;
+  // Provider-specific model config
+  const model          = bot.model || providerDef.defaultModel;
   const providerConfig = providerDef.buildConfig(model);
 
-  config.agents.defaults.model = providerConfig.agentModel;
-  config.agents.defaults.models = {
-    ...config.agents.defaults.models,
-    ...providerConfig.agentModels,
-  };
+  config.agents.defaults.model   = providerConfig.agentModel;
+  config.agents.defaults.models  = { ...config.agents.defaults.models, ...providerConfig.agentModels };
   config.agents.defaults.subagents = {
     ...config.agents.defaults.subagents,
     model: providerConfig.subagentsModel,
@@ -173,34 +170,35 @@ export async function apply(name, { quiet = false } = {}) {
 
   // Channel configs
   if (!config.channels) config.channels = {};
-  if (!config.plugins) config.plugins = {};
+  if (!config.plugins)  config.plugins  = {};
   if (!config.plugins.entries) config.plugins.entries = {};
 
   if (bot.mattermost) {
-    config.channels.mattermost = { ...config.channels.mattermost, enabled: true };
+    config.channels.mattermost        = { ...config.channels.mattermost, enabled: true };
     config.plugins.entries.mattermost = { enabled: true };
   } else {
-    if (config.channels.mattermost) config.channels.mattermost.enabled = false;
+    if (config.channels.mattermost)        config.channels.mattermost.enabled        = false;
     if (config.plugins.entries.mattermost) config.plugins.entries.mattermost.enabled = false;
   }
 
   if (bot.telegram) {
-    config.channels.telegram = { ...config.channels.telegram, enabled: true };
+    config.channels.telegram        = { ...config.channels.telegram, enabled: true };
     config.plugins.entries.telegram = { enabled: true };
   } else {
-    if (config.channels.telegram) config.channels.telegram.enabled = false;
+    if (config.channels.telegram)        config.channels.telegram.enabled        = false;
     if (config.plugins.entries.telegram) config.plugins.entries.telegram.enabled = false;
   }
 
   writeFileSync(configPath, JSON.stringify(config, null, 2));
-  log('  Updated openclaw.json');
+  log('Updated openclaw.json');
 
   // ── Onboard if needed ──────────────────────────────────────
   const identityExists = existsSync(join(botDir, 'identity'))
     || existsSync(join(botDir, 'agents', 'main', 'agent', 'device.json'));
 
   if (!identityExists) {
-    log('  Running openclaw onboard...');
+    const s = quiet ? null : p.spinner();
+    s?.start('Running openclaw onboard...');
     try {
       runOneShotContainer({
         containerName,
@@ -209,24 +207,22 @@ export async function apply(name, { quiet = false } = {}) {
         envFile: envPath,
         command: ['openclaw', 'onboard', '--non-interactive', '--accept-risk', '--skip-daemon', '--skip-health'],
       });
-      log('  Identity created');
+      s?.stop('Identity created');
       fixConfigAfterOnboard({ botDir, originalToken: gatewayToken });
     } catch (err) {
-      console.error(`  Warning: onboard failed: ${err.message}`);
+      s?.stop(`Onboard failed: ${err.message}`);
     }
   }
 
   // ── Restart container if running ───────────────────────────
   if (containerRunning(containerName)) {
-    log(`  Restarting '${containerName}'...`);
+    log(`Restarting '${containerName}'...`);
     stopContainer(containerName);
     startContainer(containerName);
-    log('  Restarted');
+    log('Restarted');
   } else if (containerExists(containerName)) {
-    log('  Container exists but is stopped. Start with: botdaddy start ' + name);
+    log(`Container stopped. Start with: botdaddy start ${name}`);
   } else {
-    log('  Start with: botdaddy start ' + name);
+    log(`Start with: botdaddy start ${name}`);
   }
-
-  log(`\n  Applied config for '${name}'.`);
 }

@@ -52,5 +52,9 @@ export async function destroy(name) {
 
   removeBot(name);
 
-  p.outro(`Bot '${name}' destroyed. Mattermost bot account (if any) must be deleted manually.`);
+  const notes = [];
+  if (bot.mattermost) notes.push('Mattermost: delete the bot account via System Console → Integrations → Bot Accounts');
+  if (bot.telegram)   notes.push('Telegram: delete the bot via @BotFather → /deletebot');
+
+  p.outro(`Bot '${name}' destroyed.${notes.length ? '\n\n  ' + notes.join('\n  ') : ''}`);
 }

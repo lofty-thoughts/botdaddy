@@ -1,0 +1,27 @@
+# Secrets
+bots/*/.env
+
+# Agent runtime (large, ephemeral)
+bots/*/agents/
+
+# Device auth (machine-specific)
+bots/*/identity/
+
+# Vector indices (regenerable)
+*.sqlite
+*.sqlite3
+*.db
+
+# Runtime
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

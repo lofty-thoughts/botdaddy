@@ -1,0 +1,16 @@
+{
+  "name": "botdaddy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLI for managing isolated OpenClaw agent instances in Docker containers",
+  "type": "module",
+  "bin": {
+    "botdaddy": "./bin/botdaddy.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "commander": "^13.1.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "stack": {
+    "namespace": "botdaddy",
+    "basePort": 19000,
+    "dataRoot": "./bots",
+    "imageName": "botdaddy-base"
+  },
+  "bots": [
+    {
+      "name": "bot-the-builder",
+      "provider": "anthropic",
+      "portSlot": 0,
+      "gatewayPort": 19000,
+      "devPortStart": 19001,
+      "devPortEnd": 19009,
+      "mattermost": true,
+      "createdAt": "2026-02-21"
+    }
+  ]
+}

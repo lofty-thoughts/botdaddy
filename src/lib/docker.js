@@ -24,9 +24,12 @@ export function imageExists(imageName) {
 
 /** Build the base image from the docker/ directory */
 export function buildImage(imageName, dockerDir) {
-  console.log(`  Building image '${imageName}'...`);
-  execSync(`docker build -t ${imageName} ${dockerDir}`, { stdio: 'inherit' });
-  console.log(`  Done.`);
+  try {
+    execSync(`docker build -t ${imageName} ${dockerDir}`, { stdio: 'pipe' });
+  } catch (err) {
+    const detail = err.stderr?.toString().trim() || err.message;
+    throw new Error(detail);
+  }
 }
 
 /** Check if a container exists (running or stopped) */
@@ -68,17 +71,17 @@ export function containerStatus(containerName) {
 
 /** Start an existing stopped container */
 export function startContainer(containerName) {
-  execSync(`docker start ${containerName}`, { stdio: 'inherit' });
+  execSync(`docker start ${containerName}`, { stdio: 'pipe' });
 }
 
 /** Stop a running container */
 export function stopContainer(containerName) {
-  execSync(`docker stop ${containerName}`, { stdio: 'inherit' });
+  execSync(`docker stop ${containerName}`, { stdio: 'pipe' });
 }
 
 /** Remove a container */
 export function removeContainer(containerName) {
-  execSync(`docker rm ${containerName}`, { stdio: 'inherit' });
+  execSync(`docker rm ${containerName}`, { stdio: 'pipe' });
 }
 
 /**
@@ -130,7 +133,7 @@ export function runContainer({
 
   args.push(imageName);
 
-  execSync(`docker ${args.join(' ')}`, { stdio: 'inherit' });
+  execSync(`docker ${args.join(' ')}`, { stdio: 'pipe' });
 }
 
 /** Run a one-shot container (for onboard) */
@@ -143,7 +146,12 @@ export function runOneShotContainer({ containerName, imageName, botDir, envFile,
     imageName,
     ...command,
   ];
-  execSync(`docker ${args.join(' ')}`, { stdio: 'inherit' });
+  try {
+    execSync(`docker ${args.join(' ')}`, { stdio: 'pipe' });
+  } catch (err) {
+    const detail = err.stderr?.toString().trim() || err.message;
+    throw new Error(detail);
+  }
 }
 
 /** Follow container logs (interactive — spawns attached process) */

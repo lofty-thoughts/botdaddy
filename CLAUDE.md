@@ -21,7 +21,11 @@ Key helpers — always use these, never hardcode:
 - **apply** is the idempotent reconciler — reads botdaddy.json, writes .env + openclaw.json, restarts container
 - **config** = wizard → botdaddy.json → apply (same command for create and update)
 
-## OpenClaw config rules (learned from debugging)
+## OpenClaw config rules
+
+Always validate any new config fields against the configuration reference before writing them: https://docs.openclaw.ai/gateway/configuration-reference.md
+
+Config defaults belong in `seed/openclaw.json.template`. Any field that has a default should be overridable on a per-bot basis via `botdaddy.json` and reconciled by `apply`.
 
 - **Channel credentials** (botToken, baseUrl) go directly in `openclaw.json` channels config, not in `.env`. Env var fallback is unreliable.
 - **Model names are always fully qualified**: `provider/model-id` (e.g. `anthropic/claude-sonnet-4-6`, `ollama/minimax-m2.5:cloud`)
@@ -32,7 +36,8 @@ Key helpers — always use these, never hardcode:
 
 ## CLI / UX
 
-- Interactive prompts use `@clack/prompts`. Import `p` and `guard()` from `src/lib/prompt.js`.
+Always put effort into a polished CLI experience. Use `@clack/prompts` for all interactive prompts — `p.intro`/`p.outro` framing, `p.spinner()` for async work, `p.log.step/info/warn/error` for structured output. Import `p` and `guard()` from `src/lib/prompt.js`.
+
 - All Docker subprocesses use `stdio: 'pipe'` — never `stdio: 'inherit'`. This prevents subprocess output from bleeding through the clack spinner UI. Surface errors via `err.stderr?.toString()`.
 - Spinners are owned by the top-level command. When `apply` is called from `config` with `quiet: true`, it produces no output — the caller manages the spinner.
 

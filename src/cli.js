@@ -15,11 +15,19 @@ export function run() {
     .version(pkg.version);
 
   program
-    .command('create <name>')
-    .description('Create a new bot')
+    .command('config <name>')
+    .description('Create or update a bot (interactive wizard + apply)')
     .action(async (name) => {
-      const { create } = await import('./commands/create.js');
-      await create(name);
+      const { config } = await import('./commands/config.js');
+      await config(name);
+    });
+
+  program
+    .command('apply <name>')
+    .description('Apply botdaddy.json config to a bot (scaffold, write configs, restart)')
+    .action(async (name) => {
+      const { apply } = await import('./commands/apply.js');
+      await apply(name);
     });
 
   program
@@ -92,6 +100,14 @@ export function run() {
     .action(async (name) => {
       const { mattermost } = await import('./commands/mattermost.js');
       await mattermost(name);
+    });
+
+  program
+    .command('telegram <name>')
+    .description('Configure Telegram for an existing bot')
+    .action(async (name) => {
+      const { telegram } = await import('./commands/telegram.js');
+      await telegram(name);
     });
 
   program

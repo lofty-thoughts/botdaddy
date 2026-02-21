@@ -1,18 +1,15 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 /**
  * Provision a Mattermost bot account via the MM REST API.
- * Creates the bot, generates an access token, writes to the agent's .env file.
+ * Creates the bot and generates an access token.
+ * Returns the token and base URL — caller is responsible for storing them.
  *
  * @param {object} opts
  * @param {string} opts.botName
  * @param {string} opts.mattermostUrl   e.g. https://mm.example.com
  * @param {string} opts.adminToken      System Admin personal access token
- * @param {string} opts.botDir          Path to bot data dir (for .env)
- * @returns {{ success: boolean, token?: string, error?: string }}
+ * @returns {{ success: boolean, token?: string, baseUrl?: string, error?: string }}
  */
-export async function provisionMattermostBot({ botName, mattermostUrl, adminToken, botDir }) {
+export async function provisionMattermostBot({ botName, mattermostUrl, adminToken }) {
   const url = mattermostUrl.replace(/\/$/, '');
   const headers = {
     'Authorization': `Bearer ${adminToken}`,
@@ -58,22 +55,9 @@ export async function provisionMattermostBot({ botName, mattermostUrl, adminToke
     }
     const { token } = await tokenRes.json();
 
-    // 3. Write to bot .env
-    const envPath = join(botDir, '.env');
-    if (existsSync(envPath)) {
-      let env = readFileSync(envPath, 'utf8');
-      // Replace existing values (commented or uncommented)
-      env = env.replace(/^#?\s*MATTERMOST_BOT_TOKEN=.*/m, `MATTERMOST_BOT_TOKEN=${token}`);
-      env = env.replace(/^#?\s*MATTERMOST_URL=.*/m, `MATTERMOST_URL=${url}`);
-      // Append if not present at all
-      if (!/^MATTERMOST_BOT_TOKEN=/m.test(env)) env += `\nMATTERMOST_BOT_TOKEN=${token}`;
-      if (!/^MATTERMOST_URL=/m.test(env)) env += `\nMATTERMOST_URL=${url}`;
-      writeFileSync(envPath, env);
-    }
-
     const prefix = token.slice(0, 8);
     console.log(`  Mattermost bot provisioned (@${botName}, token: ${prefix}...)`);
-    return { success: true, token };
+    return { success: true, token, baseUrl: url };
   } catch (err) {
     return { success: false, error: err.message };
   }

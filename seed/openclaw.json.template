@@ -39,13 +39,5 @@
       "enabled": true,
       "allowInsecureAuth": true
     }
-  },
-  "auth": {
-    "profiles": {
-      "anthropic:default": {
-        "provider": "anthropic",
-        "mode": "token"
-      }
-    }
   }
 }

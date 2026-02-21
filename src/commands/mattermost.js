@@ -1,10 +1,8 @@
-import { findBot, getBotDir, getContainerName, loadHomeConfig, saveHomeConfig, loadRegistry, saveRegistry } from '../lib/config.js';
-import { containerRunning, execInContainer } from '../lib/docker.js';
+import { findBot, getBotDir, loadHomeConfig, saveHomeConfig, loadRegistry, saveRegistry } from '../lib/config.js';
 import { makeRL, ask, askSecret } from '../lib/prompt.js';
 import { provisionMattermostBot } from '../lib/mattermost.js';
-import { writeAuthProfiles, addMattermostToConfig } from '../lib/openclaw.js';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeChannelCredential } from '../lib/openclaw.js';
+import { apply } from './apply.js';
 
 export async function mattermost(name) {
   const bot = findBot(name);
@@ -13,28 +11,51 @@ export async function mattermost(name) {
     process.exit(1);
   }
 
-  const botDir = getBotDir(name);
   const rl = makeRL();
   const homeConfig = loadHomeConfig();
 
-  // Collect MM credentials
-  let mattermostUrl = homeConfig.mattermostUrl || '';
-  let adminToken = homeConfig.mattermostAdminToken || '';
+  // Collect MM credentials — global defaults with per-bot override
+  const savedUrl = homeConfig.mattermostUrl || '';
+  const savedToken = homeConfig.mattermostAdminToken || '';
+  let mattermostUrl = '';
+  let adminToken = '';
 
-  if (mattermostUrl) {
-    const useExisting = await ask(rl, `  Use saved Mattermost URL (${mattermostUrl})?`, 'y');
-    if (useExisting.toLowerCase() !== 'y') mattermostUrl = '';
-  }
-  if (!mattermostUrl) {
+  if (savedUrl) {
+    const useDefault = await ask(rl, `  Use saved Mattermost URL (${savedUrl})?`, 'y');
+    if (useDefault.toLowerCase() === 'y') {
+      mattermostUrl = savedUrl;
+    } else {
+      mattermostUrl = await ask(rl, '  Mattermost URL (https://...)');
+      if (mattermostUrl && mattermostUrl !== savedUrl) {
+        const saveGlobal = await ask(rl, '  Save as new default for future bots?', 'n');
+        if (saveGlobal.toLowerCase() === 'y') saveHomeConfig({ mattermostUrl: mattermostUrl });
+      }
+    }
+  } else {
     mattermostUrl = await ask(rl, '  Mattermost URL (https://...)');
+    if (mattermostUrl) {
+      const save = await ask(rl, '  Save as default for future bots?', 'y');
+      if (save.toLowerCase() === 'y') saveHomeConfig({ mattermostUrl: mattermostUrl });
+    }
   }
 
-  if (adminToken) {
-    const useExisting = await ask(rl, `  Use saved admin token (${adminToken.slice(0, 8)}...)?`, 'y');
-    if (useExisting.toLowerCase() !== 'y') adminToken = '';
-  }
-  if (!adminToken) {
+  if (savedToken) {
+    const useDefault = await ask(rl, `  Use saved admin token (${savedToken.slice(0, 8)}...)?`, 'y');
+    if (useDefault.toLowerCase() === 'y') {
+      adminToken = savedToken;
+    } else {
+      adminToken = await askSecret('  Mattermost System Admin token');
+      if (adminToken && adminToken !== savedToken) {
+        const saveGlobal = await ask(rl, '  Save as new default for future bots?', 'n');
+        if (saveGlobal.toLowerCase() === 'y') saveHomeConfig({ mattermostAdminToken: adminToken });
+      }
+    }
+  } else {
     adminToken = await askSecret('  Mattermost System Admin token');
+    if (adminToken) {
+      const save = await ask(rl, '  Save as default for future bots?', 'y');
+      if (save.toLowerCase() === 'y') saveHomeConfig({ mattermostAdminToken: adminToken });
+    }
   }
 
   rl.close();
@@ -44,16 +65,12 @@ export async function mattermost(name) {
     process.exit(1);
   }
 
-  // Save credentials for future use
-  saveHomeConfig({ mattermostUrl, mattermostAdminToken: adminToken });
-
-  // Provision the bot
+  // Provision the bot account via MM API
   console.log('  Provisioning Mattermost bot...');
   const result = await provisionMattermostBot({
     botName: name,
     mattermostUrl,
     adminToken,
-    botDir,
   });
 
   if (!result.success) {
@@ -61,54 +78,22 @@ export async function mattermost(name) {
     process.exit(1);
   }
 
-  // Update openclaw.json with mattermost channel
-  addMattermostToConfig({ botDir });
-
-  // Read existing auth-profiles and merge, or create fresh
-  // We need the anthropic/openai key from the existing .env to preserve them
-  let anthropicKey = '';
-  let openaiKey = '';
-  const envPath = join(botDir, '.env');
-  if (existsSync(envPath)) {
-    const env = readFileSync(envPath, 'utf8');
-    const anthMatch = env.match(/^ANTHROPIC_API_KEY=(.+)$/m);
-    if (anthMatch) anthropicKey = anthMatch[1];
-    const oaiMatch = env.match(/^OPENAI_API_KEY=(.+)$/m);
-    if (oaiMatch) openaiKey = oaiMatch[1];
-  }
-
-  writeAuthProfiles({
-    botDir,
-    anthropicKey,
-    openaiKey,
-    mattermostUrl,
-    mattermostToken: result.token,
+  // Write credentials to openclaw.json channel config
+  writeChannelCredential(getBotDir(name), 'mattermost', {
+    botToken: result.token,
+    baseUrl: result.baseUrl,
   });
 
-  // Update botdaddy.json
+  // Update botdaddy.json with MM URL
   const reg = loadRegistry();
   const entry = reg.bots.find(b => b.name === name);
   if (entry) {
-    entry.mattermost = true;
+    entry.mattermost = mattermostUrl;
     saveRegistry(reg);
   }
 
-  // If container is running, install the plugin
-  const containerName = getContainerName(name);
-  if (containerRunning(containerName)) {
-    console.log('  Installing Mattermost plugin...');
-    try {
-      execInContainer(containerName, 'openclaw plugins install @openclaw/mattermost');
-      console.log('  Restart the bot for changes to take effect: botdaddy stop ' + name + ' && botdaddy start ' + name);
-    } catch {
-      console.log('  Warning: Could not install plugin. Run manually: botdaddy shell ' + name + ' then: openclaw plugins install @openclaw/mattermost');
-    }
-  } else {
-    console.log('  Note: Start the bot, then install the plugin:');
-    console.log(`    botdaddy start ${name}`);
-    console.log(`    botdaddy shell ${name}`);
-    console.log('    openclaw plugins install @openclaw/mattermost');
-  }
+  // Apply config (enables plugin, restarts if running)
+  await apply(name);
 
   console.log(`\n  Mattermost configured for '${name}'.`);
 }

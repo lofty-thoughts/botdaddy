@@ -1,6 +1,7 @@
 import { rmSync } from 'node:fs';
-import { findBot, removeBot, getBotDir, getContainerName } from '../lib/config.js';
+import { findBot, removeBot, getBotDir, getContainerName, loadHomeConfig } from '../lib/config.js';
 import { containerExists, containerRunning, stopContainer, removeContainer } from '../lib/docker.js';
+import { deleteMattermostBot } from '../lib/mattermost.js';
 import { p, guard } from '../lib/prompt.js';
 
 export async function destroy(name) {
@@ -50,11 +51,30 @@ export async function destroy(name) {
     p.log.info('Files kept');
   }
 
+  // ── Delete Mattermost bot account via API ─────────────────
+  if (bot.mattermost) {
+    const homeConfig   = loadHomeConfig();
+    const mattermostUrl = typeof bot.mattermost === 'string' ? bot.mattermost : homeConfig.mattermostUrl;
+    const adminToken    = homeConfig.mattermostAdminToken;
+
+    if (mattermostUrl && adminToken) {
+      s.start('Deleting Mattermost bot account...');
+      const result = await deleteMattermostBot({ botName: name, mattermostUrl, adminToken });
+      if (result.success) {
+        s.stop('Mattermost bot account deleted');
+      } else {
+        s.stop(`Could not delete Mattermost bot account: ${result.error}`);
+        p.log.warn(`Delete it manually via the Mattermost API: DELETE /api/v4/users/<id>`);
+      }
+    } else {
+      p.log.warn('Mattermost admin token not found — delete the bot account manually via the API.');
+    }
+  }
+
   removeBot(name);
 
   const notes = [];
-  if (bot.mattermost) notes.push('Mattermost: delete the bot account via System Console → Integrations → Bot Accounts');
-  if (bot.telegram)   notes.push('Telegram: delete the bot via @BotFather → /deletebot');
+  if (bot.telegram) notes.push('Telegram: delete the bot via @BotFather → /deletebot');
 
   p.outro(`Bot '${name}' destroyed.${notes.length ? '\n\n  ' + notes.join('\n  ') : ''}`);
 }

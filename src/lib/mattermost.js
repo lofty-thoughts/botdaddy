@@ -60,3 +60,41 @@ export async function provisionMattermostBot({ botName, mattermostUrl, adminToke
     return { success: false, error: err.message };
   }
 }
+
+/**
+ * Delete a Mattermost bot account via the MM REST API.
+ *
+ * @param {object} opts
+ * @param {string} opts.botName
+ * @param {string} opts.mattermostUrl
+ * @param {string} opts.adminToken
+ * @returns {{ success: boolean, error?: string }}
+ */
+export async function deleteMattermostBot({ botName, mattermostUrl, adminToken }) {
+  const url     = mattermostUrl.replace(/\/$/, '');
+  const headers = { 'Authorization': `Bearer ${adminToken}` };
+
+  try {
+    // Look up user ID by username
+    const lookupRes = await fetch(`${url}/api/v4/users/username/${botName}`, { headers });
+    if (!lookupRes.ok) {
+      if (lookupRes.status === 404) return { success: true }; // Already gone
+      throw new Error(`User lookup failed (${lookupRes.status})`);
+    }
+    const { id } = await lookupRes.json();
+
+    // Permanently delete the user
+    const deleteRes = await fetch(`${url}/api/v4/users/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!deleteRes.ok) {
+      const body = await deleteRes.text();
+      throw new Error(`Delete failed (${deleteRes.status}): ${body}`);
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}

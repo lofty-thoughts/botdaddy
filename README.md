@@ -110,7 +110,7 @@ botdaddy telegram mybot
 
 Create a bot via [@BotFather](https://t.me/BotFather) and paste the token when prompted.
 
-### Tailscale
+## Tailscale
 
 Add bots to your [Tailscale](https://tailscale.com) network so they're reachable from any device on your tailnet. Each bot gets its own node with hostname `<namespace>-<name>` (e.g. `botdaddy-mybot`).
 

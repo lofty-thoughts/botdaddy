@@ -24,6 +24,15 @@ RUN install -m 0755 -d /etc/apt/keyrings \
     && apt-get install -y docker-ce-cli docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
+# Tailscale (started conditionally at runtime via entrypoint.sh)
+RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
+      > /usr/share/keyrings/tailscale-archive-keyring.gpg \
+    && curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list \
+      > /etc/apt/sources.list.d/tailscale.list \
+    && apt-get update \
+    && apt-get install -y tailscale \
+    && rm -rf /var/lib/apt/lists/*
+
 # Pin all versions as build args
 ARG NVM_VERSION=0.40.4
 ARG NODE_VERSION=24.13.1

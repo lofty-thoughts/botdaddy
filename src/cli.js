@@ -114,6 +114,14 @@ export function run() {
     });
 
   program
+    .command('tailscale <name>')
+    .description('Configure Tailscale for an existing bot')
+    .action(async (name) => {
+      const { tailscale } = await import('./commands/tailscale.js');
+      await tailscale(name);
+    });
+
+  program
     .command('approve <name> <channel> <code>')
     .description('Approve a channel pairing (e.g. botdaddy approve mybot mattermost ABC123)')
     .action(async (name, channel, code) => {

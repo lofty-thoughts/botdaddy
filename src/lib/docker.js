@@ -99,6 +99,9 @@ export function runContainer({
   network,
   orbDomain,
   extraEnv = {},
+  capAdd = [],
+  devices = [],
+  extraVolumes = [],
 }) {
   const args = [
     'run', '-d',
@@ -120,6 +123,21 @@ export function runContainer({
   // Extra env vars
   for (const [k, v] of Object.entries(extraEnv)) {
     args.push('-e', `${k}=${v}`);
+  }
+
+  // Capabilities
+  for (const cap of capAdd) {
+    args.push('--cap-add', cap);
+  }
+
+  // Device mappings
+  for (const dev of devices) {
+    args.push('--device', dev);
+  }
+
+  // Extra volume mounts
+  for (const vol of extraVolumes) {
+    args.push('-v', vol);
   }
 
   // Network

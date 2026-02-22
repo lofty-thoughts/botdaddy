@@ -43,6 +43,13 @@ export async function start(name) {
     s.stop('Container started');
   } else {
     s.start(`Creating container...`);
+
+    const tailscaleOpts = bot.tailscale ? {
+      capAdd:       ['NET_ADMIN', 'NET_RAW'],
+      devices:      ['/dev/net/tun:/dev/net/tun'],
+      extraVolumes: [`${join(botDir, '.tailscale')}:/var/lib/tailscale`],
+    } : {};
+
     runContainer({
       containerName,
       imageName:    stack.imageName,
@@ -53,6 +60,7 @@ export async function start(name) {
       devPortEnd:   bot.devPortEnd,
       network:      networkName,
       orbDomain,
+      ...tailscaleOpts,
     });
     s.stop('Container created');
   }
@@ -81,5 +89,14 @@ export async function start(name) {
     p.log.warn(`Check logs: botdaddy logs ${name}`);
   }
 
-  p.outro(`Bot '${name}' running.\n\n  Gateway:   ${gwUrl}\n  OrbStack:  https://${orbDomain}\n  Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`);
+  const outroLines = [
+    `Gateway:   ${gwUrl}`,
+    `OrbStack:  https://${orbDomain}`,
+    `Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`,
+  ];
+  if (bot.tailscale) {
+    outroLines.push(`Tailscale: ${stack.namespace}-${name}`);
+  }
+
+  p.outro(`Bot '${name}' running.\n\n  ${outroLines.join('\n  ')}`);
 }

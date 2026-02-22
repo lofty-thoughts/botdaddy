@@ -1,9 +1,10 @@
 import {
   findBot, addBot, loadRegistry, saveRegistry,
   loadHomeConfig, saveHomeConfig, validateName,
-  getStack, getBotDir,
+  getStack, getBotDir, getContainerName,
 } from '../lib/config.js';
 import { allocatePortRange } from '../lib/ports.js';
+import { containerExists, containerRunning, stopContainer, removeContainer } from '../lib/docker.js';
 import { p, guard } from '../lib/prompt.js';
 import { today } from '../lib/scaffold.js';
 import { writeChannelCredential } from '../lib/openclaw.js';
@@ -218,6 +219,60 @@ export async function config(name) {
     }
   }
 
+  // ── Tailscale ────────────────────────────────────────────────
+  const currentTS = existing?.tailscale;
+  let tailscale;
+
+  if (currentTS) {
+    const change = guard(await p.confirm({
+      message: 'Tailscale: enabled. Change?',
+      initialValue: false,
+    }));
+    if (change) {
+      const disable = guard(await p.confirm({
+        message: 'Disable Tailscale?',
+        initialValue: false,
+      }));
+      tailscale = !disable;
+    } else {
+      tailscale = true;
+    }
+  } else {
+    const setup = guard(await p.confirm({
+      message: 'Set up Tailscale?',
+      initialValue: false,
+    }));
+    if (setup) {
+      const savedTsKey = homeConfig.tailscaleAuthKey || '';
+      if (savedTsKey) {
+        const useSaved = guard(await p.confirm({
+          message: `Use saved Tailscale auth key (${savedTsKey.slice(0, 8)}...)?`,
+          initialValue: true,
+        }));
+        if (!useSaved) {
+          const key = guard(await p.password({ message: 'Tailscale auth key or OAuth client secret' }));
+          if (key) {
+            const save = guard(await p.confirm({
+              message: 'Save as new default for future bots?',
+              initialValue: false,
+            }));
+            if (save) saveHomeConfig({ tailscaleAuthKey: key });
+          }
+        }
+      } else {
+        p.log.info('Generate an auth key at https://login.tailscale.com/admin/settings/keys');
+        const key = guard(await p.password({ message: 'Tailscale auth key or OAuth client secret' }));
+        if (key) {
+          saveHomeConfig({ tailscaleAuthKey: key });
+          p.log.step('Auth key saved for all bots');
+        }
+      }
+      tailscale = true;
+    } else {
+      tailscale = false;
+    }
+  }
+
   // ── Build + save entry ─────────────────────────────────────
   const portInfo = existing
     ? { portSlot: existing.portSlot, gatewayPort: existing.gatewayPort, devPortStart: existing.devPortStart, devPortEnd: existing.devPortEnd }
@@ -232,6 +287,7 @@ export async function config(name) {
     devPortEnd:   portInfo.devPortEnd,
     mattermost,
     telegram,
+    tailscale,
     createdAt: existing?.createdAt || today,
     model,
   };
@@ -254,6 +310,18 @@ export async function config(name) {
   s.stop('Config applied');
 
   delete process.env._BOTDADDY_ANTHROPIC_KEY;
+
+  // ── Post-apply: recreate container if Tailscale status changed
+  const tsChanged = existing && (!!currentTS !== !!tailscale);
+  if (tsChanged) {
+    const containerName = getContainerName(name);
+    if (containerExists(containerName)) {
+      s.start('Removing container (Tailscale capabilities changed)...');
+      if (containerRunning(containerName)) stopContainer(containerName);
+      removeContainer(containerName);
+      s.stop('Container removed — restart with: botdaddy start ' + name);
+    }
+  }
 
   // ── Post-apply: channel credentials ───────────────────────
   const botDir = getBotDir(name);
@@ -291,7 +359,8 @@ export async function config(name) {
     `Gateway:  http://localhost:${entry.gatewayPort}`,
     `OrbStack: https://${orbDomain}`,
   ];
-  if (!existing) lines.push(`Start with: botdaddy start ${name}`);
+  if (tailscale) lines.push(`Tailscale: ${stack.namespace}-${name}`);
+  if (!existing || tsChanged) lines.push(`Start with: botdaddy start ${name}`);
 
   p.outro(`Bot '${name}' ${existing ? 'updated' : 'created'}.\n\n  ${lines.join('\n  ')}`);
 }

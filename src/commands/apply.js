@@ -64,6 +64,10 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
 
   mkdirSync(memoryDir, { recursive: true });
 
+  if (bot.tailscale) {
+    mkdirSync(join(botDir, '.tailscale'), { recursive: true });
+  }
+
   if (isNew) {
     const baseDir = join(SEED_ROOT, 'base');
     if (existsSync(baseDir)) {
@@ -112,6 +116,25 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     }
     updated = updated.replace(/^BOTDADDY_DEV_PORT_START=.*$/m, `BOTDADDY_DEV_PORT_START=${bot.devPortStart}`);
     updated = updated.replace(/^BOTDADDY_DEV_PORT_END=.*$/m,   `BOTDADDY_DEV_PORT_END=${bot.devPortEnd}`);
+
+    // Tailscale
+    if (bot.tailscale) {
+      const tsKey      = homeConfig.tailscaleAuthKey || '';
+      const tsHostname = `${stack.namespace}-${name}`;
+      if (tsKey) {
+        if (/^TS_AUTHKEY=.*$/m.test(updated)) {
+          updated = updated.replace(/^TS_AUTHKEY=.*$/m, `TS_AUTHKEY=${tsKey}`);
+          updated = updated.replace(/^TS_HOSTNAME=.*$/m, `TS_HOSTNAME=${tsHostname}`);
+        } else {
+          updated += `\n# Tailscale\nTS_AUTHKEY=${tsKey}\nTS_HOSTNAME=${tsHostname}\n`;
+        }
+      }
+    } else {
+      updated = updated.replace(/\n# Tailscale\nTS_AUTHKEY=.*\nTS_HOSTNAME=.*\n?/, '');
+      updated = updated.replace(/^TS_AUTHKEY=.*\n?/m, '');
+      updated = updated.replace(/^TS_HOSTNAME=.*\n?/m, '');
+    }
+
     writeFileSync(envPath, updated);
   } else {
     gatewayToken     = genToken();
@@ -123,6 +146,15 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_START}}', String(bot.devPortStart));
     envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_END}}',   String(bot.devPortEnd));
     if (anthropicKey) envContent = envContent.replace('ANTHROPIC_API_KEY=', `ANTHROPIC_API_KEY=${anthropicKey}`);
+
+    if (bot.tailscale) {
+      const tsKey = homeConfig.tailscaleAuthKey || '';
+      if (tsKey) {
+        const tsHostname = `${stack.namespace}-${name}`;
+        envContent += `\n# Tailscale\nTS_AUTHKEY=${tsKey}\nTS_HOSTNAME=${tsHostname}\n`;
+      }
+    }
+
     writeFileSync(envPath, envContent);
     chmodSync(envPath, 0o600);
     log('Generated .env');

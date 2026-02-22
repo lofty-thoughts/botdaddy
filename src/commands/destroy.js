@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { findBot, removeBot, getBotDir, getContainerName, loadHomeConfig } from '../lib/config.js';
 import { containerExists, containerRunning, stopContainer, removeContainer } from '../lib/docker.js';
 import { deleteMattermostBot } from '../lib/mattermost.js';
@@ -25,6 +26,15 @@ export async function destroy(name) {
 
   const containerName = getContainerName(name);
   const s = p.spinner();
+
+  // Logout from Tailscale before stopping (cleans up the tailnet node)
+  if (bot.tailscale && containerRunning(containerName)) {
+    try {
+      execSync(`docker exec ${containerName} tailscale logout`, { stdio: 'pipe' });
+    } catch {
+      // Non-fatal — node can be removed manually from admin console
+    }
+  }
 
   if (containerRunning(containerName)) {
     s.start(`Stopping ${containerName}...`);
@@ -85,6 +95,7 @@ export async function destroy(name) {
 
   const notes = [];
   if (bot.telegram) notes.push('Telegram: delete the bot via @BotFather → /deletebot');
+  if (bot.tailscale) notes.push('Tailscale: verify the node was removed at https://login.tailscale.com/admin/machines');
 
   p.outro(`Bot '${name}' destroyed.${notes.length ? '\n\n  ' + notes.join('\n  ') : ''}`);
 }

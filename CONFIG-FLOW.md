@@ -11,6 +11,7 @@ HOST MACHINE
 │ anthropicKey    (default)   │
 │ mattermostUrl               │
 │ mattermostAdminToken        │
+│ tailscaleAuthKey            │
 └─────────────────────────────┘
 
 botdaddy.json                              (bot registry — gitignored)
@@ -22,6 +23,7 @@ botdaddy.json                              (bot registry — gitignored)
 │   devPortStart/End          │
 │   mattermost (url|bool)     │
 │   telegram (bool)           │
+│   tailscale (bool)          │
 │   createdAt                 │
 └─────────────────────────────┘
 
@@ -34,6 +36,8 @@ bots/<name>/                               (per-bot data — gitignored)
 │  │ GIT_USER_NAME / GIT_USER_EMAIL            │                  │
 │  │ ANTHROPIC_API_KEY  ◄── per-bot key        │                  │
 │  │ BOTDADDY_DEV_PORT_START/END               │                  │
+│  │ TS_AUTHKEY         ◄── if tailscale      │                  │
+│  │ TS_HOSTNAME                               │                  │
 │  └───────────────────────────────────────────┘                  │
 │                                                                 │
 │  openclaw.json                (OpenClaw config — single source) │
@@ -47,6 +51,7 @@ bots/<name>/                               (per-bot data — gitignored)
 │  │ plugins.entries: { telegram, mattermost } │                  │
 │  └───────────────────────────────────────────┘                  │
 │                                                                 │
+│  .tailscale/         (Tailscale state — if enabled)              │
 │  workspace/          (agent workspace — git repo)               │
 │  agents/main/agent/  (identity, device.json)                    │
 │                                                                 │
@@ -94,12 +99,18 @@ botdaddy mattermost <name>
           botdaddy.json (mattermost URL)
   calls:  apply → enables plugin, restarts
 
+botdaddy tailscale <name>
+  rebuilds: Docker image (ensures Tailscale installed)
+  removes:  container (capabilities change requires recreation)
+  writes: botdaddy.json (tailscale: true)
+  calls:  apply → writes TS_AUTHKEY/TS_HOSTNAME to .env
+
 botdaddy start <name>
   reads:  botdaddy.json (ports, name)
   action: docker run (mounts bots/<name>/ → /root/.openclaw)
 
 botdaddy destroy <name>
-  action: docker stop + rm
+  action: tailscale logout (if enabled), docker stop + rm
   optional: rm -rf bots/<name>/
 ```
 
@@ -125,4 +136,10 @@ Gateway token:
 Ollama endpoint:
   hardcoded → openclaw.json models.providers.ollama.{baseUrl, apiKey}
               (read by OpenClaw directly)
+
+Tailscale auth key:
+  Tailscale admin → config wizard or tailscale cmd → ~/.botdaddy/config.json
+  (generate key)    (user pastes, saved globally)     ↓
+                                                    apply → .env TS_AUTHKEY
+                                                            (read by entrypoint.sh)
 ```

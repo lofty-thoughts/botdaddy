@@ -34,6 +34,17 @@ Config defaults belong in `seed/openclaw.json.template`. Any field that has a de
 - **OpenClaw onboard** resets `gateway.bind` and regenerates the token — `fixConfigAfterOnboard()` must be called after onboard to re-patch.
 - When disabling a channel, set `enabled: false` on both `config.channels.<name>` and `config.plugins.entries.<name>`. Omitting the key is not enough.
 
+## Tailscale integration
+
+Tailscale is installed in the Docker image and started conditionally by `entrypoint.sh` when `TS_AUTHKEY` is present in the environment. Each bot gets its own tailnet node.
+
+- **Auth key** stored in `~/.botdaddy/config.json` as `tailscaleAuthKey`, baked into per-bot `.env` by apply (same pattern as `ANTHROPIC_API_KEY`).
+- **Hostname** auto-derived as `${namespace}-${name}` — no user prompt needed.
+- **State** persisted at `${botDir}/.tailscale` → volume-mounted to `/var/lib/tailscale`.
+- **Docker capabilities**: `--cap-add NET_ADMIN`, `--cap-add NET_RAW`, `--device /dev/net/tun` — only when `bot.tailscale` is true. These are set at container creation time, so enabling/disabling Tailscale requires container recreation (stop + rm + run), not just restart.
+- **Non-blocking**: if Tailscale fails to connect, the gateway still starts normally.
+- The `botdaddy tailscale` command forces an image rebuild to ensure Tailscale is installed.
+
 ## CLI / UX
 
 Always put effort into a polished CLI experience. Use `@clack/prompts` for all interactive prompts — `p.intro`/`p.outro` framing, `p.spinner()` for async work, `p.log.step/info/warn/error` for structured output. Import `p` and `guard()` from `src/lib/prompt.js`.

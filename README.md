@@ -1,6 +1,6 @@
 # botdaddy
 
-CLI for managing isolated [OpenClaw](https://openclaw.ai) agent instances in Docker containers. Each bot gets its own container, workspace, config, and optionally a Mattermost or Telegram integration.
+CLI for managing isolated [OpenClaw](https://openclaw.ai) agent instances in Docker containers. Each bot gets its own container, workspace, config, and optionally Mattermost, Telegram, or Tailscale integration.
 
 ## Prerequisites
 
@@ -51,6 +51,7 @@ botdaddy dashboard mybot
 | `dashboard <name>` | Open the gateway dashboard in a browser |
 | `mattermost <name>` | Provision or re-provision Mattermost for a bot |
 | `telegram <name>` | Configure Telegram for a bot |
+| `tailscale <name>` | Configure Tailscale for a bot |
 | `approve <name> <channel> <code>` | Approve a channel pairing code |
 | `destroy <name>` | Stop and remove a bot (optionally delete data) |
 
@@ -109,14 +110,31 @@ botdaddy telegram mybot
 
 Create a bot via [@BotFather](https://t.me/BotFather) and paste the token when prompted.
 
+### Tailscale
+
+Add bots to your [Tailscale](https://tailscale.com) network so they're reachable from any device on your tailnet. Each bot gets its own node with hostname `<namespace>-<name>` (e.g. `botdaddy-mybot`).
+
+```sh
+# During create:
+botdaddy config mybot   # answer yes to Tailscale setup
+
+# Or add to an existing bot:
+botdaddy tailscale mybot
+```
+
+You'll need a Tailscale auth key or OAuth client secret — generate one at [Tailscale admin](https://login.tailscale.com/admin/settings/keys). The key is saved to `~/.botdaddy/config.json` and shared across all bots.
+
+Once started, the bot's gateway is reachable at `http://<tailscale-ip>:18789` from any device on your tailnet.
+
 ## Data Layout
 
 ```
-~/.botdaddy/config.json     # global defaults (API keys, MM admin token)
+~/.botdaddy/config.json     # global defaults (API keys, MM admin token, TS auth key)
 botdaddy.json               # bot registry — gitignored
 bots/<name>/
-  .env                      # env vars (gateway token, API key, dev ports)
+  .env                      # env vars (gateway token, API key, dev ports, TS auth)
   openclaw.json             # OpenClaw config (models, channels, gateway)
+  .tailscale/               # Tailscale state (persists node identity)
   workspace/                # agent workspace (git repo)
   agents/                   # agent identity and sessions
 ```

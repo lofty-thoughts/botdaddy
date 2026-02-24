@@ -76,11 +76,39 @@ Select **Anthropic** in the wizard. You'll be prompted for an API key, which can
 
 Default model: `anthropic/claude-sonnet-4-6`
 
-### Ollama (local)
+### Ollama
 
-Select **Ollama (local)** in the wizard. Ollama must be running on the host — the container reaches it via `host.internal:11434`.
+The default Ollama model is `minimax-m2.5:cloud`, which runs on MiniMax's servers through Ollama's cloud API — no GPU required.
 
-Default model: `ollama/minimax-m2.5:cloud`
+**1. Install Ollama**
+
+```sh
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+Or download from [ollama.com](https://ollama.com).
+
+**2. Log in to Ollama**
+
+```sh
+ollama login
+```
+
+This authenticates with your Ollama account (required for cloud models).
+
+**3. Pull the model**
+
+```sh
+ollama pull minimax-m2.5:cloud
+```
+
+**4. Create a bot**
+
+```sh
+botdaddy create mybot   # select "Ollama (local)" as the provider
+```
+
+Ollama must be running on the host — the container reaches it via `host.internal:11434`.
 
 ## Channels
 

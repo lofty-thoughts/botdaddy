@@ -165,12 +165,14 @@ bots/<name>/
   .env                      # env vars (gateway token, API key, dev ports, TS auth)
   openclaw.json             # OpenClaw config (models, channels, gateway)
   .tailscale/               # Tailscale state (persists node identity)
+  .vscode-server/           # VS Code remote server + extensions (persisted)
+  .cursor-server/           # Cursor remote server + extensions (persisted)
   workspace/                # agent workspace (git repo)
     skills/                 # seeded skills (agent-browser, etc.)
   agents/                   # agent identity and sessions
 ```
 
-Each bot's data directory is volume-mounted into its container at `/root/.openclaw`.
+Each bot's data directory is volume-mounted into its container at `/root/.openclaw`. The `.vscode-server` and `.cursor-server` directories are mounted separately at `/root/` so IDE remote connections survive container recreations.
 
 ## Base Image
 

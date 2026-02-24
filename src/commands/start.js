@@ -44,10 +44,19 @@ export async function start(name) {
   } else {
     s.start(`Creating container...`);
 
+    // Persist IDE remote server state across container recreations
+    const extraVolumes = [
+      `${join(botDir, '.vscode-server')}:/root/.vscode-server`,
+      `${join(botDir, '.cursor-server')}:/root/.cursor-server`,
+    ];
+
+    if (bot.tailscale) {
+      extraVolumes.push(`${join(botDir, '.tailscale')}:/var/lib/tailscale`);
+    }
+
     const tailscaleOpts = bot.tailscale ? {
-      capAdd:       ['NET_ADMIN', 'NET_RAW'],
-      devices:      ['/dev/net/tun:/dev/net/tun'],
-      extraVolumes: [`${join(botDir, '.tailscale')}:/var/lib/tailscale`],
+      capAdd:  ['NET_ADMIN', 'NET_RAW'],
+      devices: ['/dev/net/tun:/dev/net/tun'],
     } : {};
 
     runContainer({
@@ -60,6 +69,7 @@ export async function start(name) {
       devPortEnd:   bot.devPortEnd,
       network:      networkName,
       orbDomain,
+      extraVolumes,
       ...tailscaleOpts,
     });
     s.stop('Container created');

@@ -63,6 +63,8 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   const isNew        = !existsSync(workspaceDir);
 
   mkdirSync(memoryDir, { recursive: true });
+  mkdirSync(join(botDir, '.vscode-server'), { recursive: true });
+  mkdirSync(join(botDir, '.cursor-server'), { recursive: true });
 
   if (bot.tailscale) {
     mkdirSync(join(botDir, '.tailscale'), { recursive: true });

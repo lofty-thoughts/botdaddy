@@ -45,6 +45,10 @@ Tailscale is installed in the Docker image and started conditionally by `entrypo
 - **Non-blocking**: if Tailscale fails to connect, the gateway still starts normally.
 - The `botdaddy tailscale` command recreates the container (for capability changes) but does **not** rebuild the image — Tailscale is always installed in the base image.
 
+## IDE remote server persistence
+
+VS Code and Cursor remote SSH connections download a server + extensions to `/root/.vscode-server` and `/root/.cursor-server`. These are volume-mounted from `${botDir}/.vscode-server` and `${botDir}/.cursor-server` so they survive container recreations. The directories are created unconditionally by `apply` and mounted by `start.js`.
+
 ## Base image tooling
 
 The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything pre-installed so every bot is ready for any project type:

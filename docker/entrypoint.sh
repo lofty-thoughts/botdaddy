@@ -22,6 +22,8 @@ if [ -n "$TS_AUTHKEY" ]; then
       --authkey="$TS_AUTHKEY" \
       --hostname="${TS_HOSTNAME:-$(hostname)}" \
       --accept-routes \
+      --ssh \
+      --reset \
       --timeout=30s \
       2>&1 || echo "[botdaddy] Tailscale: failed to connect (non-fatal)"
   else

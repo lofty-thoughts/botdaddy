@@ -14,13 +14,20 @@ export function run() {
     .description('Manage isolated OpenClaw agent instances in Docker containers')
     .version(pkg.version);
 
+  const configAction = async (name) => {
+    const { config } = await import('./commands/config.js');
+    await config(name);
+  };
+
   program
     .command('config <name>')
     .description('Create or update a bot (interactive wizard + apply)')
-    .action(async (name) => {
-      const { config } = await import('./commands/config.js');
-      await config(name);
-    });
+    .action(configAction);
+
+  program
+    .command('create <name>')
+    .description('Alias for config')
+    .action(configAction);
 
   program
     .command('apply <name>')

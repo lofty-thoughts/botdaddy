@@ -23,7 +23,7 @@ Or run directly with `node bin/botdaddy.js <command>`.
 
 ```sh
 # Create a new bot (interactive wizard + apply)
-botdaddy config mybot
+botdaddy create mybot
 
 # Start the bot
 botdaddy start mybot
@@ -39,6 +39,7 @@ botdaddy dashboard mybot
 
 | Command | Description |
 |---------|-------------|
+| `create <name>` | Alias for `config` |
 | `config <name>` | Create or update a bot — interactive wizard then applies |
 | `apply <name>` | Re-apply `botdaddy.json` config without re-running the wizard |
 | `start <name>` | Start the bot container |

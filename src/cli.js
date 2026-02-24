@@ -122,6 +122,14 @@ export function run() {
     });
 
   program
+    .command('rebuild [name]')
+    .description('Rebuild the base image and recreate bot containers')
+    .action(async (name) => {
+      const { rebuild } = await import('./commands/rebuild.js');
+      await rebuild(name);
+    });
+
+  program
     .command('approve <name> <channel> <code>')
     .description('Approve a channel pairing (e.g. botdaddy approve mybot mattermost ABC123)')
     .action(async (name, channel, code) => {

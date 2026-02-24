@@ -100,10 +100,14 @@ botdaddy mattermost <name>
   calls:  apply → enables plugin, restarts
 
 botdaddy tailscale <name>
-  rebuilds: Docker image (ensures Tailscale installed)
   removes:  container (capabilities change requires recreation)
   writes: botdaddy.json (tailscale: true)
   calls:  apply → writes TS_AUTHKEY/TS_HOSTNAME to .env
+
+botdaddy rebuild [name]
+  rebuilds: Docker image from docker/Dockerfile
+  removes:  all containers (or one if name given)
+  note:     containers must be restarted with `botdaddy start`
 
 botdaddy start <name>
   reads:  botdaddy.json (ports, name)

@@ -53,6 +53,7 @@ botdaddy dashboard mybot
 | `telegram <name>` | Configure Telegram for a bot |
 | `tailscale <name>` | Configure Tailscale for a bot |
 | `approve <name> <channel> <code>` | Approve a channel pairing code |
+| `rebuild [name]` | Rebuild the base image and recreate bot containers |
 | `destroy <name>` | Stop and remove a bot (optionally delete data) |
 
 ## How It Works
@@ -140,6 +141,34 @@ bots/<name>/
 ```
 
 Each bot's data directory is volume-mounted into its container at `/root/.openclaw`.
+
+## Base Image
+
+The base Docker image is a "kitchen sink" build with tooling for multiple project types pre-installed:
+
+- **PHP 8.2, 8.3, 8.4** (via [Ondrej Sury PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php)) with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug)
+- **Composer** (PHP package manager)
+- **Node.js** (pinned version), **TypeScript**, **tsx**
+- **Docker CLI + compose plugin** (for Docker-out-of-Docker)
+- **Tailscale** (started conditionally at runtime)
+
+PHP 8.4 is the default. Switch versions inside a container:
+
+```sh
+# Use a specific version directly
+php8.2 artisan serve
+
+# Or change the default
+update-alternatives --set php /usr/bin/php8.3
+```
+
+After modifying the Dockerfile, rebuild all bots:
+
+```sh
+botdaddy rebuild          # rebuild image + recreate all containers
+botdaddy rebuild mybot    # rebuild image + recreate one container
+botdaddy start mybot      # start on the new image
+```
 
 ## Docker-out-of-Docker
 

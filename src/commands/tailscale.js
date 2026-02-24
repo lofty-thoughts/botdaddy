@@ -1,10 +1,8 @@
-import { join } from 'node:path';
 import {
   findBot, getStack, getContainerName,
   loadRegistry, saveRegistry, loadHomeConfig, saveHomeConfig,
-  PROJECT_ROOT,
 } from '../lib/config.js';
-import { containerExists, containerRunning, stopContainer, removeContainer, buildImage } from '../lib/docker.js';
+import { containerExists, containerRunning, stopContainer, removeContainer } from '../lib/docker.js';
 import { p, guard } from '../lib/prompt.js';
 import { apply } from './apply.js';
 
@@ -64,14 +62,9 @@ export async function tailscale(name) {
     saveRegistry(reg);
   }
 
-  // ── Rebuild image (ensures Tailscale is installed + new entrypoint)
-  const stack    = getStack();
-  const s        = p.spinner();
-  s.start('Rebuilding image (adding Tailscale)...');
-  buildImage(stack.imageName, join(PROJECT_ROOT, 'docker'));
-  s.stop('Image rebuilt');
-
   // ── Remove container (capabilities change requires recreation)
+  const stack         = getStack();
+  const s             = p.spinner();
   const containerName = getContainerName(name);
 
   if (containerExists(containerName)) {

@@ -43,7 +43,18 @@ Tailscale is installed in the Docker image and started conditionally by `entrypo
 - **State** persisted at `${botDir}/.tailscale` → volume-mounted to `/var/lib/tailscale`.
 - **Docker capabilities**: `--cap-add NET_ADMIN`, `--cap-add NET_RAW`, `--device /dev/net/tun` — only when `bot.tailscale` is true. These are set at container creation time, so enabling/disabling Tailscale requires container recreation (stop + rm + run), not just restart.
 - **Non-blocking**: if Tailscale fails to connect, the gateway still starts normally.
-- The `botdaddy tailscale` command forces an image rebuild to ensure Tailscale is installed.
+- The `botdaddy tailscale` command recreates the container (for capability changes) but does **not** rebuild the image — Tailscale is always installed in the base image.
+
+## Base image tooling
+
+The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything pre-installed so every bot is ready for any project type:
+
+- **PHP 8.2, 8.3, 8.4** side by side via the Ondrej Sury PPA, with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug). Default is 8.4; switch with `update-alternatives --set php /usr/bin/php8.x` or call `php8.2`/`php8.3` directly.
+- **Composer** installed globally.
+- **Node.js** (pinned version via nvm), **TypeScript**, and **tsx** installed globally.
+- **Docker CLI + compose plugin** for Docker-out-of-Docker.
+
+When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot.
 
 ## CLI / UX
 

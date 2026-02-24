@@ -30,35 +30,48 @@ export function run() {
     .action(configAction);
 
   program
-    .command('apply <name>')
-    .description('Apply botdaddy.json config to a bot (scaffold, write configs, restart)')
+    .command('apply [name]')
+    .description('Apply botdaddy.json config to a bot (all bots if no name given)')
     .action(async (name) => {
       const { p }     = await import('./lib/prompt.js');
       const { apply } = await import('./commands/apply.js');
-      p.intro(`Apply: ${name}`);
-      await apply(name);
-      p.outro('Done.');
+      if (name) {
+        p.intro(`Apply: ${name}`);
+        await apply(name);
+        p.outro('Done.');
+      } else {
+        const { loadRegistry } = await import('./lib/config.js');
+        const reg = loadRegistry();
+        if (reg.bots.length === 0) { p.log.info('No bots registered.'); return; }
+        p.intro('Apply all');
+        for (const bot of reg.bots) {
+          p.log.step(`Applying ${bot.name}...`);
+          await apply(bot.name, { quiet: true });
+          p.log.info(`${bot.name} done`);
+        }
+        p.outro(`Applied ${reg.bots.length} bot(s).`);
+      }
     });
 
   program
-    .command('start <name>')
-    .description('Start a bot container')
+    .command('start [name]')
+    .description('Start a bot container (all bots if no name given)')
     .action(async (name) => {
       const { start } = await import('./commands/start.js');
       await start(name);
     });
 
   program
-    .command('restart <name>')
-    .description('Restart a running bot container')
+    .command('restart [name]')
+    .description('Restart a running bot container (all bots if no name given)')
     .action(async (name) => {
       const { restart } = await import('./commands/restart.js');
       await restart(name);
     });
 
   program
-    .command('stop <name>')
-    .description('Stop a bot container')
+    .command('stop [name]')
+    .description('Stop a bot container (all bots if no name given)')
     .action(async (name) => {
       const { stop } = await import('./commands/stop.js');
       await stop(name);

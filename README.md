@@ -41,10 +41,10 @@ botdaddy dashboard mybot
 |---------|-------------|
 | `create <name>` | Alias for `config` |
 | `config <name>` | Create or update a bot — interactive wizard then applies |
-| `apply <name>` | Re-apply `botdaddy.json` config without re-running the wizard |
-| `start <name>` | Start the bot container |
-| `restart <name>` | Restart the bot container |
-| `stop <name>` | Stop the bot container |
+| `apply [name]` | Re-apply `botdaddy.json` config without re-running the wizard (all bots if no name) |
+| `start [name]` | Start bot container(s) (all bots if no name) |
+| `restart [name]` | Restart bot container(s) (all bots if no name) |
+| `stop [name]` | Stop bot container(s) (all bots if no name) |
 | `logs <name>` | Follow container logs |
 | `ls` | List all bots and their status |
 | `shell <name>` | Open a shell inside the container |

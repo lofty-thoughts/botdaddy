@@ -1,27 +1,17 @@
 import { join } from 'node:path';
 import { execSync } from 'node:child_process';
-import { findBot, getStack, getBotDir, getContainerName } from '../lib/config.js';
+import { findBot, getStack, getBotDir, getContainerName, loadRegistry } from '../lib/config.js';
 import {
   checkDocker, containerExists, containerRunning,
   startContainer, runContainer, ensureNetwork,
 } from '../lib/docker.js';
 import { p } from '../lib/prompt.js';
 
-export async function start(name) {
-  const bot = findBot(name);
-  if (!bot) {
-    p.log.error(`Bot '${name}' not found in botdaddy.json`);
-    process.exit(1);
-  }
-
-  if (!checkDocker()) {
-    p.log.error('Docker is not running.');
-    process.exit(1);
-  }
-
-  p.intro(`Start: ${name}`);
-
-  const stack         = getStack();
+/**
+ * Start or create a single bot's container and wait for its gateway.
+ * Returns { skipped, ready, orbDomain }.
+ */
+async function startBot(bot, name, stack, s) {
   const containerName = getContainerName(name);
   const botDir        = getBotDir(name);
   const networkName   = `${stack.namespace}-net`;
@@ -30,21 +20,16 @@ export async function start(name) {
   ensureNetwork(networkName);
 
   if (containerRunning(containerName)) {
-    p.log.info(`Bot '${name}' is already running.`);
-    p.outro(`Gateway: http://localhost:${bot.gatewayPort}\n  OrbStack: https://${orbDomain}`);
-    return;
+    return { skipped: true, orbDomain };
   }
 
-  const s = p.spinner();
-
   if (containerExists(containerName)) {
-    s.start(`Starting container...`);
+    s.start(`Starting ${name}...`);
     startContainer(containerName);
-    s.stop('Container started');
+    s.stop(`${name} started`);
   } else {
-    s.start(`Creating container...`);
+    s.start(`Creating ${name}...`);
 
-    // Persist IDE remote server state across container recreations
     const extraVolumes = [
       `${join(botDir, '.vscode-server')}:/root/.vscode-server`,
       `${join(botDir, '.cursor-server')}:/root/.cursor-server`,
@@ -72,17 +57,17 @@ export async function start(name) {
       extraVolumes,
       ...tailscaleOpts,
     });
-    s.stop('Container created');
+    s.stop(`${name} created`);
   }
 
   // Wait for gateway
   const gwUrl    = `http://localhost:${bot.gatewayPort}`;
   const maxWait  = 60_000;
-  const start    = Date.now();
+  const t0       = Date.now();
   let ready      = false;
 
-  s.start('Waiting for gateway...');
-  while (Date.now() - start < maxWait) {
+  s.start(`Waiting for ${name} gateway...`);
+  while (Date.now() - t0 < maxWait) {
     try {
       execSync(`curl -sfo /dev/null ${gwUrl}`, { stdio: 'pipe' });
       ready = true;
@@ -93,15 +78,67 @@ export async function start(name) {
   }
 
   if (ready) {
-    s.stop('Gateway ready');
+    s.stop(`${name} gateway ready`);
   } else {
-    s.stop('Gateway not responding — it may still be starting');
-    p.log.warn(`Check logs: botdaddy logs ${name}`);
+    s.stop(`${name} gateway not responding — may still be starting`);
+  }
+
+  return { skipped: false, ready, orbDomain };
+}
+
+export async function start(name) {
+  if (!checkDocker()) {
+    p.log.error('Docker is not running.');
+    process.exit(1);
+  }
+
+  const stack = getStack();
+
+  if (!name) {
+    // All bots
+    const reg = loadRegistry();
+    if (reg.bots.length === 0) {
+      p.log.info('No bots registered.');
+      return;
+    }
+
+    p.intro('Start all');
+    const s = p.spinner();
+    let started = 0;
+
+    for (const bot of reg.bots) {
+      const result = await startBot(bot, bot.name, stack, s);
+      if (result.skipped) {
+        p.log.info(`${bot.name} — already running`);
+      } else {
+        started++;
+      }
+    }
+
+    p.outro(`Started ${started} bot(s).`);
+    return;
+  }
+
+  // Single bot
+  const bot = findBot(name);
+  if (!bot) {
+    p.log.error(`Bot '${name}' not found in botdaddy.json`);
+    process.exit(1);
+  }
+
+  p.intro(`Start: ${name}`);
+  const s = p.spinner();
+  const result = await startBot(bot, name, stack, s);
+
+  if (result.skipped) {
+    p.log.info(`Bot '${name}' is already running.`);
+    p.outro(`Gateway: http://localhost:${bot.gatewayPort}\n  OrbStack: https://${result.orbDomain}`);
+    return;
   }
 
   const outroLines = [
-    `Gateway:   ${gwUrl}`,
-    `OrbStack:  https://${orbDomain}`,
+    `Gateway:   http://localhost:${bot.gatewayPort}`,
+    `OrbStack:  https://${result.orbDomain}`,
     `Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`,
   ];
   if (bot.tailscale) {

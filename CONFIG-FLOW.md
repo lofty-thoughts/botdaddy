@@ -81,13 +81,14 @@ botdaddy config <name>        (create OR update — same command)
   │  apply(name) again    → restart container        │
   └──────────────────────────────────────────────────┘
 
-botdaddy apply <name>
+botdaddy apply [name]
   reads:  botdaddy.json + ~/.botdaddy/config.json
   writes: bots/<name>/.env           (env vars, anthropic key)
           bots/<name>/openclaw.json  (models, channels, gateway, plugins)
           bots/<name>/workspace/     (seed files — first run only)
   runs:   openclaw onboard           (first run only — in container)
   action: docker stop + start        (if container running)
+  note:   applies to all bots if no name given
 
 botdaddy telegram <name>
   writes: openclaw.json channels.telegram.botToken
@@ -109,9 +110,10 @@ botdaddy rebuild [name]
   removes:  all containers (or one if name given)
   note:     containers must be restarted with `botdaddy start`
 
-botdaddy start <name>
+botdaddy start [name]
   reads:  botdaddy.json (ports, name)
   action: docker run (mounts bots/<name>/ → /root/.openclaw)
+  note:   starts all bots if no name given
 
 botdaddy destroy <name>
   action: tailscale logout (if enabled), docker stop + rm

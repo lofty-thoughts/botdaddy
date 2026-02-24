@@ -166,6 +166,7 @@ bots/<name>/
   openclaw.json             # OpenClaw config (models, channels, gateway)
   .tailscale/               # Tailscale state (persists node identity)
   workspace/                # agent workspace (git repo)
+    skills/                 # seeded skills (agent-browser, etc.)
   agents/                   # agent identity and sessions
 ```
 
@@ -180,6 +181,7 @@ The base Docker image is a "kitchen sink" build with tooling for multiple projec
 - **Node.js** (pinned version), **TypeScript**, **tsx**
 - **Docker CLI + compose plugin** (for Docker-out-of-Docker)
 - **Tailscale** (started conditionally at runtime)
+- **[agent-browser](https://github.com/vercel-labs/agent-browser)** with Chromium (headless browser automation for agents)
 
 PHP 8.4 is the default. Switch versions inside a container:
 

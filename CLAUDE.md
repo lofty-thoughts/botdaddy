@@ -53,8 +53,9 @@ The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything 
 - **Composer** installed globally.
 - **Node.js** (pinned version via nvm), **TypeScript**, and **tsx** installed globally.
 - **Docker CLI + compose plugin** for Docker-out-of-Docker.
+- **agent-browser** with Chromium pre-downloaded (`agent-browser install --with-deps`).
 
-When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot.
+When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot. Rebuild also syncs seed skills into all targeted bot workspaces.
 
 ## CLI / UX
 
@@ -62,6 +63,14 @@ Always put effort into a polished CLI experience. Use `@clack/prompts` for all i
 
 - All Docker subprocesses use `stdio: 'pipe'` — never `stdio: 'inherit'`. This prevents subprocess output from bleeding through the clack spinner UI. Surface errors via `err.stderr?.toString()`.
 - Spinners are owned by the top-level command. When `apply` is called from `config` with `quiet: true`, it produces no output — the caller manages the spinner.
+
+## Skills
+
+Skill files live in `seed/skills/<name>/` and are seeded into new bot workspaces at `workspace/skills/<name>/` during `apply`. OpenClaw auto-discovers workspace skills — no `openclaw.json` config needed.
+
+- **Adding a new skill**: Place files in `seed/skills/<name>/`, run `botdaddy rebuild` to sync to existing bots.
+- **Updating a skill**: Update files in `seed/skills/<name>/`, run `botdaddy rebuild`.
+- **Installed skills**: `agent-browser` (headless browser automation by Vercel Labs).
 
 ## Provider abstraction
 

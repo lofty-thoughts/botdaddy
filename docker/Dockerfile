@@ -70,13 +70,17 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/instal
     && . $NVM_DIR/nvm.sh \
     && nvm install ${NODE_VERSION} \
     && nvm use ${NODE_VERSION} \
-    && npm install -g openclaw@${OPENCLAW_VERSION} typescript tsx \
+    && npm install -g openclaw@${OPENCLAW_VERSION} typescript tsx agent-browser \
     && ln -s $(which node) /usr/local/bin/node \
     && ln -s $(which npm) /usr/local/bin/npm \
     && ln -s $(which npx) /usr/local/bin/npx \
     && ln -s $(which openclaw) /usr/local/bin/openclaw \
     && ln -s $(which tsc) /usr/local/bin/tsc \
-    && ln -s $(which tsx) /usr/local/bin/tsx
+    && ln -s $(which tsx) /usr/local/bin/tsx \
+    && ln -s $(which agent-browser) /usr/local/bin/agent-browser
+
+# agent-browser: download Chromium + install Linux system dependencies
+RUN . $NVM_DIR/nvm.sh && agent-browser install --with-deps
 
 WORKDIR /root/.openclaw
 EXPOSE 18789

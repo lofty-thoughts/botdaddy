@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, chmodSync, cpSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import {
   findBot, getStack, getBotDir, getContainerName,
@@ -82,6 +82,12 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
         templateFile(join(baseDir, f), join(workspaceDir, f), vars);
       }
       log('Scaffolded workspace seed files');
+    }
+
+    const seedSkillsDir = join(SEED_ROOT, 'skills');
+    if (existsSync(seedSkillsDir)) {
+      cpSync(seedSkillsDir, join(workspaceDir, 'skills'), { recursive: true });
+      log('Seeded workspace skills');
     }
 
     try {

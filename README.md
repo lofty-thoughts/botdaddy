@@ -168,26 +168,51 @@ bots/<name>/
   .vscode-server/           # VS Code remote server + extensions (persisted)
   .cursor-server/           # Cursor remote server + extensions (persisted)
   workspace/                # agent workspace (git repo)
-    skills/                 # seeded skills (agent-browser, etc.)
+    skills/                 # seeded skills (agent-browser, coding-agent, marketing, etc.)
   agents/                   # agent identity and sessions
 ```
 
 Each bot's data directory is volume-mounted into its container at `/root/.openclaw`. The `.vscode-server` and `.cursor-server` directories are mounted separately at `/root/` so IDE remote connections survive container recreations.
 
+## Skills
+
+Every bot is seeded with a set of skills that OpenClaw auto-discovers from the workspace. Skills are synced from `seed/skills/` during `apply` and `rebuild`.
+
+**Agent tools:**
+- **[agent-browser](https://github.com/vercel-labs/agent-browser)** — headless browser automation with Chromium
+- **[coding-agent](https://github.com/openclaw/openclaw/tree/main/skills/coding-agent)** — orchestrate coding agents (Claude Code, Codex, etc.) with PTY and background sessions
+- **[notion](https://github.com/openclaw/openclaw/tree/main/skills/notion)** — Notion API integration
+- **[trello](https://github.com/openclaw/openclaw/tree/main/skills/trello)** — Trello board management
+
+**Marketing** (29 skills from [marketingskills](https://github.com/coreyhaines31/marketingskills)):
+- **Conversion optimization:** page-cro, signup-flow-cro, onboarding-cro, form-cro, popup-cro, paywall-upgrade-cro
+- **Content & copy:** copywriting, copy-editing, cold-email, email-sequence, social-content
+- **SEO & discovery:** seo-audit, ai-seo, programmatic-seo, competitor-alternatives, schema-markup
+- **Paid & distribution:** paid-ads, ad-creative
+- **Measurement:** analytics-tracking, ab-test-setup
+- **Retention:** churn-prevention
+- **Growth:** free-tool-strategy, referral-program
+- **Strategy:** marketing-ideas, marketing-psychology, launch-strategy, pricing-strategy, content-strategy, product-marketing-context
+
 ## Base Image
 
-The base Docker image is a "kitchen sink" build with tooling for multiple project types pre-installed:
+The base Docker image is a "kitchen sink" build with everything pre-installed so every bot is ready for any project type.
 
+**Languages & runtimes:**
 - **Python 3** with pip and venv
 - **PHP 8.2, 8.3, 8.4** (via [Ondrej Sury PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php)) with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug)
 - **Composer** (PHP package manager)
 - **Node.js** (pinned version via nvm), **TypeScript**, **tsx**
+
+**Dev tools:**
 - **Docker CLI + compose plugin** (for Docker-out-of-Docker)
 - **[GitHub CLI](https://cli.github.com)** (`gh`)
+- **ripgrep** (`rg`) and **tree**
 - **Tailscale** (started conditionally at runtime)
-- **[agent-browser](https://github.com/vercel-labs/agent-browser)** with Chromium (headless browser automation for agents)
-- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** (Anthropic's CLI for Claude — agentic coding assistant)
-- **ripgrep** (`rg`) and **tree** for fast code search and directory visualization
+
+**Agent tools:**
+- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** — agentic coding assistant
+- **[agent-browser](https://github.com/vercel-labs/agent-browser)** — headless Chromium for browser automation
 
 PHP 8.4 is the default. Switch versions inside a container:
 

@@ -78,7 +78,7 @@ Skill files live in `seed/skills/<name>/` and are seeded into new bot workspaces
 
 - **Adding a new skill**: Place files in `seed/skills/<name>/`, run `botdaddy rebuild` to sync to existing bots.
 - **Updating a skill**: Update files in `seed/skills/<name>/`, run `botdaddy rebuild`.
-- **Installed skills**: `agent-browser` (headless browser automation by Vercel Labs).
+- **Installed skills**: `agent-browser` (headless browser automation by Vercel Labs), `coding-agent` (orchestrate coding agents like Claude Code/Codex with PTY and background sessions), `notion` (Notion API integration), `trello` (Trello board management), and 29 marketing skills from [marketingskills](https://github.com/coreyhaines31/marketingskills) (CRO, SEO, copywriting, ads, analytics, etc.).
 
 ## Provider abstraction
 

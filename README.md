@@ -178,13 +178,16 @@ Each bot's data directory is volume-mounted into its container at `/root/.opencl
 
 The base Docker image is a "kitchen sink" build with tooling for multiple project types pre-installed:
 
+- **Python 3** with pip and venv
 - **PHP 8.2, 8.3, 8.4** (via [Ondrej Sury PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php)) with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug)
 - **Composer** (PHP package manager)
-- **Node.js** (pinned version), **TypeScript**, **tsx**
+- **Node.js** (pinned version via nvm), **TypeScript**, **tsx**
 - **Docker CLI + compose plugin** (for Docker-out-of-Docker)
+- **[GitHub CLI](https://cli.github.com)** (`gh`)
 - **Tailscale** (started conditionally at runtime)
 - **[agent-browser](https://github.com/vercel-labs/agent-browser)** with Chromium (headless browser automation for agents)
 - **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** (Anthropic's CLI for Claude — agentic coding assistant)
+- **ripgrep** (`rg`) and **tree** for fast code search and directory visualization
 
 PHP 8.4 is the default. Switch versions inside a container:
 

@@ -13,6 +13,11 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     gnupg \
     unzip \
+    python3 \
+    python3-pip \
+    python3-venv \
+    ripgrep \
+    tree \
     && rm -rf /var/lib/apt/lists/*
 
 # Ondrej Sury PHP PPA (multiple PHP versions side by side)
@@ -50,6 +55,15 @@ RUN install -m 0755 -d /etc/apt/keyrings \
        > /etc/apt/sources.list.d/docker.list \
     && apt-get update \
     && apt-get install -y docker-ce-cli docker-compose-plugin \
+    && rm -rf /var/lib/apt/lists/*
+
+# GitHub CLI
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+      > /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+       > /etc/apt/sources.list.d/github-cli.list \
+    && apt-get update \
+    && apt-get install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
 # Tailscale (started conditionally at runtime via entrypoint.sh)

@@ -53,11 +53,15 @@ VS Code and Cursor remote SSH connections download a server + extensions to `/ro
 
 The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything pre-installed so every bot is ready for any project type:
 
+- **Python 3** with pip and venv.
 - **PHP 8.2, 8.3, 8.4** side by side via the Ondrej Sury PPA, with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug). Default is 8.4; switch with `update-alternatives --set php /usr/bin/php8.x` or call `php8.2`/`php8.3` directly.
 - **Composer** installed globally.
 - **Node.js** (pinned version via nvm), **TypeScript**, and **tsx** installed globally.
 - **Docker CLI + compose plugin** for Docker-out-of-Docker.
+- **GitHub CLI** (`gh`) for repo/PR/issue workflows.
+- **Claude Code** (`claude`) for agentic coding.
 - **agent-browser** with Chromium pre-downloaded (`agent-browser install --with-deps`).
+- **ripgrep** (`rg`) and **tree** for fast code search and directory visualization.
 
 When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot. Rebuild also syncs seed skills into all targeted bot workspaces.
 

@@ -184,6 +184,7 @@ The base Docker image is a "kitchen sink" build with tooling for multiple projec
 - **Docker CLI + compose plugin** (for Docker-out-of-Docker)
 - **Tailscale** (started conditionally at runtime)
 - **[agent-browser](https://github.com/vercel-labs/agent-browser)** with Chromium (headless browser automation for agents)
+- **[Claude Code](https://docs.anthropic.com/en/docs/claude-code)** (Anthropic's CLI for Claude — agentic coding assistant)
 
 PHP 8.4 is the default. Switch versions inside a container:
 

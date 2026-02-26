@@ -18,6 +18,10 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     ripgrep \
     tree \
+    libvips-dev \
+    postgresql-client \
+    default-mysql-client \
+    redis-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # Ondrej Sury PHP PPA (multiple PHP versions side by side)

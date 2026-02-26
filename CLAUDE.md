@@ -57,6 +57,8 @@ The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything 
 - **PHP 8.2, 8.3, 8.4** side by side via the Ondrej Sury PPA, with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug). Default is 8.4; switch with `update-alternatives --set php /usr/bin/php8.x` or call `php8.2`/`php8.3` directly.
 - **Composer** installed globally.
 - **Node.js** (pinned version via nvm), **TypeScript**, and **tsx** installed globally.
+- **libvips** for native image processing (sharp — used by Next.js, Astro).
+- **Database clients**: `psql`, `mysql`, `redis-cli`.
 - **Docker CLI + compose plugin** for Docker-out-of-Docker.
 - **GitHub CLI** (`gh`) for repo/PR/issue workflows.
 - **Claude Code** (`claude`) for agentic coding.

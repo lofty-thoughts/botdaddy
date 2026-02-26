@@ -222,6 +222,14 @@ The base Docker image is a "kitchen sink" build with everything pre-installed so
 - **Composer** (PHP package manager)
 - **Node.js** (pinned version via nvm), **TypeScript**, **tsx**
 
+**Libraries:**
+- **libvips** — native image processing for [sharp](https://sharp.pixelplumbing.com) (used by Next.js, Astro)
+
+**Database clients:**
+- **PostgreSQL client** (`psql`)
+- **MySQL client** (`mysql`)
+- **Redis tools** (`redis-cli`)
+
 **Dev tools:**
 - **Docker CLI + compose plugin** (for Docker-out-of-Docker)
 - **[GitHub CLI](https://cli.github.com)** (`gh`)

@@ -6,7 +6,7 @@ CLI for managing isolated [OpenClaw](https://openclaw.ai) agent instances in Doc
 
 - [OrbStack](https://orbstack.dev) (or Docker Desktop)
 - Node.js >= 22
-- An Anthropic API key, or [Ollama](https://ollama.ai) running locally
+- An API key for [Anthropic](https://console.anthropic.com) or [OpenAI](https://platform.openai.com), a [ChatGPT subscription](https://chatgpt.com) (Codex), or [Ollama](https://ollama.ai) running locally
 
 ## Installation
 
@@ -75,6 +75,23 @@ See [CONFIG-FLOW.md](./CONFIG-FLOW.md) for a full map of where config lives and 
 Select **Anthropic** in the wizard. You'll be prompted for an API key, which can be saved as a global default or set per-bot.
 
 Default model: `anthropic/claude-sonnet-4-6`
+
+### OpenAI
+
+Select **OpenAI** in the wizard. You'll be prompted for an API key, which can be saved as a global default or set per-bot.
+
+Default model: `openai/gpt-4.1`
+
+### OpenAI (Codex subscription)
+
+Use your ChatGPT Pro/Plus subscription instead of a pay-per-use API key. Select **OpenAI (Codex subscription)** in the wizard — no API key is needed. After starting the bot, authenticate inside the container:
+
+```sh
+botdaddy shell mybot
+openclaw models auth login --provider openai-codex
+```
+
+Default model: `openai-codex/codex-mini-latest`
 
 ### Ollama
 

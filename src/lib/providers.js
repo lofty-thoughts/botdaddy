@@ -10,12 +10,47 @@ const PROVIDERS = {
     label: 'Anthropic',
     defaultModel: 'anthropic/claude-sonnet-4-6',
     needsApiKey: true,
+    apiKeyEnvVar: 'ANTHROPIC_API_KEY',
+    homeConfigKey: 'anthropicKey',
+    apiKeyLabel: 'Anthropic API key',
     buildConfig(model) {
       return {
         agentModel: { primary: model },
         agentModels: { [model]: { alias: 'default' } },
         subagentsModel: model,
         // No provider endpoint needed — Anthropic is built-in to OpenClaw
+      };
+    },
+  },
+
+  openai: {
+    label: 'OpenAI',
+    defaultModel: 'openai/gpt-4.1',
+    needsApiKey: true,
+    apiKeyEnvVar: 'OPENAI_API_KEY',
+    homeConfigKey: 'openaiKey',
+    apiKeyLabel: 'OpenAI API key',
+    buildConfig(model) {
+      return {
+        agentModel: { primary: model },
+        agentModels: { [model]: { alias: 'default' } },
+        subagentsModel: model,
+        // No provider endpoint needed — OpenAI is built-in to OpenClaw
+      };
+    },
+  },
+
+  'openai-codex': {
+    label: 'OpenAI (Codex subscription)',
+    defaultModel: 'openai-codex/codex-mini-latest',
+    needsApiKey: false,
+    postSetupHint: 'After starting, authenticate inside the container:\n  botdaddy shell {name}\n  openclaw models auth login --provider openai-codex',
+    buildConfig(model) {
+      return {
+        agentModel: { primary: model },
+        agentModels: { [model]: { alias: 'default' } },
+        subagentsModel: model,
+        // No provider endpoint needed — uses OAuth, not API key
       };
     },
   },
@@ -63,4 +98,11 @@ export function providerLabels() {
 export function providerFromLabel(label) {
   const entry = Object.entries(PROVIDERS).find(([, p]) => p.label === label);
   return entry ? entry[0] : label.toLowerCase().replace(/\s*\(.*\)/, '');
+}
+
+export function providerOptions() {
+  return Object.entries(PROVIDERS).map(([key, prov]) => ({
+    value: key,
+    label: prov.label,
+  }));
 }

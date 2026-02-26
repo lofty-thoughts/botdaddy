@@ -103,10 +103,10 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   // ── Resolve provider + secrets ─────────────────────────────
   const provider    = (bot.provider || 'anthropic').toLowerCase().replace(/\s*\(.*\)/, '');
   const providerDef = getProvider(provider);
-  let anthropicKey  = '';
+  let apiKey        = '';
 
   if (providerDef.needsApiKey) {
-    anthropicKey = process.env._BOTDADDY_ANTHROPIC_KEY || homeConfig.anthropicKey || '';
+    apiKey = process.env._BOTDADDY_API_KEY || homeConfig[providerDef.homeConfigKey] || '';
   }
 
   // ── Generate / update .env ─────────────────────────────────
@@ -119,8 +119,13 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     gatewayToken     = tokenMatch?.[1] || genToken();
 
     let updated = env;
-    if (anthropicKey) {
-      updated = updated.replace(/^ANTHROPIC_API_KEY=.*$/m, `ANTHROPIC_API_KEY=${anthropicKey}`);
+    if (apiKey && providerDef.apiKeyEnvVar) {
+      const re = new RegExp(`^${providerDef.apiKeyEnvVar}=.*$`, 'm');
+      if (re.test(updated)) {
+        updated = updated.replace(re, `${providerDef.apiKeyEnvVar}=${apiKey}`);
+      } else {
+        updated += `${providerDef.apiKeyEnvVar}=${apiKey}\n`;
+      }
     }
     updated = updated.replace(/^BOTDADDY_DEV_PORT_START=.*$/m, `BOTDADDY_DEV_PORT_START=${bot.devPortStart}`);
     updated = updated.replace(/^BOTDADDY_DEV_PORT_END=.*$/m,   `BOTDADDY_DEV_PORT_END=${bot.devPortEnd}`);
@@ -153,7 +158,9 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     envContent = envContent.replaceAll('{{GATEWAY_TOKEN}}',           gatewayToken);
     envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_START}}', String(bot.devPortStart));
     envContent = envContent.replaceAll('{{BOTDADDY_DEV_PORT_END}}',   String(bot.devPortEnd));
-    if (anthropicKey) envContent = envContent.replace('ANTHROPIC_API_KEY=', `ANTHROPIC_API_KEY=${anthropicKey}`);
+    if (apiKey && providerDef.apiKeyEnvVar) {
+      envContent = envContent.replace(`${providerDef.apiKeyEnvVar}=`, `${providerDef.apiKeyEnvVar}=${apiKey}`);
+    }
 
     if (bot.tailscale) {
       const tsKey = homeConfig.tailscaleAuthKey || '';

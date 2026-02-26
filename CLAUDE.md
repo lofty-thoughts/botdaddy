@@ -28,8 +28,8 @@ Always validate any new config fields against the configuration reference before
 Config defaults belong in `seed/openclaw.json.template`. Any field that has a default should be overridable on a per-bot basis via `botdaddy.json` and reconciled by `apply`.
 
 - **Channel credentials** (botToken, baseUrl) go directly in `openclaw.json` channels config, not in `.env`. Env var fallback is unreliable.
-- **Model names are always fully qualified**: `provider/model-id` (e.g. `anthropic/claude-sonnet-4-6`, `ollama/minimax-m2.5:cloud`)
-- **`auth.profiles`** only supports `mode: "oauth"` or `mode: "api_key"` — no `baseUrl`/`apiKey` fields. Anthropic key is read from `ANTHROPIC_API_KEY` env var automatically; no auth-profiles.json needed.
+- **Model names are always fully qualified**: `provider/model-id` (e.g. `anthropic/claude-sonnet-4-6`, `openai/gpt-4.1`, `openai-codex/codex-mini-latest`, `ollama/minimax-m2.5:cloud`)
+- **`auth.profiles`** only supports `mode: "oauth"` or `mode: "api_key"` — no `baseUrl`/`apiKey` fields. Provider API keys are read from env vars automatically (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`); no auth-profiles.json needed. OpenAI Codex uses OAuth — authenticate with `openclaw models auth login --provider openai-codex` inside the container.
 - **Ollama** routes through `models.providers.ollama` with `api: "openai-completions"` and `baseUrl: "http://host.internal:11434/v1"`.
 - **OpenClaw onboard** resets `gateway.bind` and regenerates the token — `fixConfigAfterOnboard()` must be called after onboard to re-patch.
 - When disabling a channel, set `enabled: false` on both `config.channels.<name>` and `config.plugins.entries.<name>`. Omitting the key is not enough.
@@ -82,4 +82,4 @@ Skill files live in `seed/skills/<name>/` and are seeded into new bot workspaces
 
 ## Provider abstraction
 
-Providers live in `src/lib/providers.js`. Each provider defines `label`, `defaultModel`, `needsApiKey`, and `buildConfig(qualifiedModel)`. Add new providers there — no branching in `apply.js` or `config.js`.
+Providers live in `src/lib/providers.js`. Each provider defines `label`, `defaultModel`, `needsApiKey`, and `buildConfig(qualifiedModel)`. Providers that need an API key also define `apiKeyEnvVar`, `homeConfigKey`, and `apiKeyLabel`. Providers that need post-setup steps (e.g. OAuth login) define `postSetupHint`. Add new providers there — no branching in `apply.js` or `config.js`.

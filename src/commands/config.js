@@ -9,7 +9,7 @@ import { p, guard } from '../lib/prompt.js';
 import { today } from '../lib/scaffold.js';
 import { writeChannelCredential } from '../lib/openclaw.js';
 import { provisionMattermostBot } from '../lib/mattermost.js';
-import { getProvider } from '../lib/providers.js';
+import { getProvider, providerOptions } from '../lib/providers.js';
 import { apply } from './apply.js';
 
 /**
@@ -31,50 +31,45 @@ export async function config(name) {
   const homeConfig = loadHomeConfig();
 
   // ── Provider ───────────────────────────────────────────────
-  const providerOptions = [
-    { value: 'anthropic', label: 'Anthropic' },
-    { value: 'ollama',    label: 'Ollama (local)' },
-  ];
-
   const provider = guard(await p.select({
     message: 'AI Provider',
-    options: providerOptions,
+    options: providerOptions(),
     initialValue: existing?.provider || 'anthropic',
   }));
 
   const providerDef = getProvider(provider);
 
   // ── API key ────────────────────────────────────────────────
-  let anthropicKey;
+  let apiKey;
   if (providerDef.needsApiKey) {
-    const savedKey = homeConfig.anthropicKey || '';
+    const savedKey = homeConfig[providerDef.homeConfigKey] || '';
     if (savedKey) {
       const useSaved = guard(await p.confirm({
-        message: `Use saved Anthropic key (${savedKey.slice(0, 8)}...)?`,
+        message: `Use saved ${providerDef.apiKeyLabel} (${savedKey.slice(0, 8)}...)?`,
         initialValue: true,
       }));
       if (!useSaved) {
-        const key = guard(await p.password({ message: 'Anthropic API key' }));
-        anthropicKey = key || savedKey;
+        const key = guard(await p.password({ message: providerDef.apiKeyLabel }));
+        apiKey = key || savedKey;
         if (key) {
           const save = guard(await p.confirm({
             message: 'Save as new default for future bots?',
             initialValue: false,
           }));
-          if (save) saveHomeConfig({ anthropicKey: key });
+          if (save) saveHomeConfig({ [providerDef.homeConfigKey]: key });
         }
       } else {
-        anthropicKey = savedKey;
+        apiKey = savedKey;
       }
     } else {
-      const key = guard(await p.password({ message: 'Anthropic API key' }));
+      const key = guard(await p.password({ message: providerDef.apiKeyLabel }));
       if (key) {
-        anthropicKey = key;
+        apiKey = key;
         const save = guard(await p.confirm({
           message: 'Save as default for future bots?',
           initialValue: true,
         }));
-        if (save) saveHomeConfig({ anthropicKey: key });
+        if (save) saveHomeConfig({ [providerDef.homeConfigKey]: key });
       }
     }
   }
@@ -302,14 +297,14 @@ export async function config(name) {
   }
 
   // ── Apply ──────────────────────────────────────────────────
-  if (anthropicKey) process.env._BOTDADDY_ANTHROPIC_KEY = anthropicKey;
+  if (apiKey) process.env._BOTDADDY_API_KEY = apiKey;
 
   const s = p.spinner();
   s.start('Applying config...');
   await apply(name, { quiet: true, spinner: s });
   s.stop('Config applied');
 
-  delete process.env._BOTDADDY_ANTHROPIC_KEY;
+  delete process.env._BOTDADDY_API_KEY;
 
   // ── Post-apply: recreate container if Tailscale status changed
   const tsChanged = existing && (!!currentTS !== !!tailscale);
@@ -350,6 +345,11 @@ export async function config(name) {
       s.stop(`Mattermost provisioning failed: ${result.error}`);
       p.log.warn(`Retry with: botdaddy mattermost ${name}`);
     }
+  }
+
+  // ── Post-setup hint (e.g. OAuth login) ───────────────────
+  if (providerDef.postSetupHint) {
+    p.log.info(providerDef.postSetupHint.replaceAll('{name}', name));
   }
 
   // ── Summary ────────────────────────────────────────────────

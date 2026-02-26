@@ -9,6 +9,7 @@ HOST MACHINE
 ~/.botdaddy/config.json                    (global defaults)
 ┌─────────────────────────────┐
 │ anthropicKey    (default)   │
+│ openaiKey       (default)   │
 │ mattermostUrl               │
 │ mattermostAdminToken        │
 │ tailscaleAuthKey            │
@@ -34,7 +35,8 @@ bots/<name>/                               (per-bot data — gitignored)
 │  ┌───────────────────────────────────────────┐                  │
 │  │ OPENCLAW_GATEWAY_TOKEN                    │                  │
 │  │ GIT_USER_NAME / GIT_USER_EMAIL            │                  │
-│  │ ANTHROPIC_API_KEY  ◄── per-bot key        │                  │
+│  │ ANTHROPIC_API_KEY  ◄── per-bot key        │
+│  │ OPENAI_API_KEY     ◄── per-bot key        │                  │
 │  │ BOTDADDY_DEV_PORT_START/END               │                  │
 │  │ TS_AUTHKEY         ◄── if tailscale      │                  │
 │  │ TS_HOSTNAME                               │                  │
@@ -83,7 +85,7 @@ botdaddy config <name>        (create OR update — same command)
 
 botdaddy apply [name]
   reads:  botdaddy.json + ~/.botdaddy/config.json
-  writes: bots/<name>/.env           (env vars, anthropic key)
+  writes: bots/<name>/.env           (env vars, provider API key)
           bots/<name>/openclaw.json  (models, channels, gateway, plugins)
           bots/<name>/workspace/     (seed files — first run only)
   runs:   openclaw onboard           (first run only — in container)
@@ -126,6 +128,14 @@ botdaddy destroy <name>
 Anthropic key:
   ~/.botdaddy/config.json → config wizard → .env ANTHROPIC_API_KEY
   (global default)           (per-bot)       (read by OpenClaw via env)
+
+OpenAI key:
+  ~/.botdaddy/config.json → config wizard → .env OPENAI_API_KEY
+  (global default)           (per-bot)       (read by OpenClaw via env)
+
+OpenAI Codex (subscription):
+  No API key — uses OAuth. After starting the bot:
+  botdaddy shell <name> → openclaw models auth login --provider openai-codex
 
 Telegram token:
   BotFather → config wizard or telegram cmd → openclaw.json botToken

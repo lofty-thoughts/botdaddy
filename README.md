@@ -4,7 +4,8 @@ CLI for managing isolated [OpenClaw](https://openclaw.ai) agent instances in Doc
 
 ## Prerequisites
 
-- [OrbStack](https://orbstack.dev) (or Docker Desktop)
+- **macOS:** [OrbStack](https://orbstack.dev) (recommended) or Docker Desktop
+- **Linux:** Docker Engine or Docker Desktop
 - Node.js >= 22
 - An API key for [Anthropic](https://console.anthropic.com) or [OpenAI](https://platform.openai.com), a [ChatGPT subscription](https://chatgpt.com) (Codex), or [Ollama](https://ollama.ai) running locally
 
@@ -125,7 +126,7 @@ ollama pull minimax-m2.5:cloud
 botdaddy create mybot   # select "Ollama (local)" as the provider
 ```
 
-Ollama must be running on the host — the container reaches it via `host.internal:11434`.
+Ollama must be running on the host — the container reaches it via `host.docker.internal:11434`.
 
 ## Channels
 

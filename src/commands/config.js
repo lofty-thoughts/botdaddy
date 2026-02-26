@@ -10,6 +10,7 @@ import { today } from '../lib/scaffold.js';
 import { writeChannelCredential } from '../lib/openclaw.js';
 import { provisionMattermostBot } from '../lib/mattermost.js';
 import { getProvider, providerOptions } from '../lib/providers.js';
+import { isMac } from '../lib/platform.js';
 import { apply } from './apply.js';
 
 /**
@@ -354,11 +355,12 @@ export async function config(name) {
 
   // ── Summary ────────────────────────────────────────────────
   const stack = getStack();
-  const orbDomain = `${stack.namespace}-${name}.orb.local`;
   const lines = [
     `Gateway:  http://localhost:${entry.gatewayPort}`,
-    `OrbStack: https://${orbDomain}`,
   ];
+  if (isMac) {
+    lines.push(`OrbStack: https://${stack.namespace}-${name}.orb.local`);
+  }
   if (tailscale) lines.push(`Tailscale: ${stack.namespace}-${name}`);
   if (!existing || tsChanged) lines.push(`Start with: botdaddy start ${name}`);
 

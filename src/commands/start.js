@@ -6,6 +6,7 @@ import {
   startContainer, runContainer, ensureNetwork,
 } from '../lib/docker.js';
 import { p } from '../lib/prompt.js';
+import { isMac } from '../lib/platform.js';
 
 /**
  * Start or create a single bot's container and wait for its gateway.
@@ -15,7 +16,7 @@ async function startBot(bot, name, stack, s) {
   const containerName = getContainerName(name);
   const botDir        = getBotDir(name);
   const networkName   = `${stack.namespace}-net`;
-  const orbDomain     = `${stack.namespace}-${name}.orb.local`;
+  const orbDomain     = isMac ? `${stack.namespace}-${name}.orb.local` : null;
 
   ensureNetwork(networkName);
 
@@ -132,15 +133,20 @@ export async function start(name) {
 
   if (result.skipped) {
     p.log.info(`Bot '${name}' is already running.`);
-    p.outro(`Gateway: http://localhost:${bot.gatewayPort}\n  OrbStack: https://${result.orbDomain}`);
+    const outroMsg = result.orbDomain
+      ? `Gateway: http://localhost:${bot.gatewayPort}\n  OrbStack: https://${result.orbDomain}`
+      : `Gateway: http://localhost:${bot.gatewayPort}`;
+    p.outro(outroMsg);
     return;
   }
 
   const outroLines = [
     `Gateway:   http://localhost:${bot.gatewayPort}`,
-    `OrbStack:  https://${result.orbDomain}`,
-    `Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`,
   ];
+  if (result.orbDomain) {
+    outroLines.push(`OrbStack:  https://${result.orbDomain}`);
+  }
+  outroLines.push(`Dev ports: ${bot.devPortStart}-${bot.devPortEnd}`);
   if (bot.tailscale) {
     outroLines.push(`Tailscale: ${stack.namespace}-${name}`);
   }

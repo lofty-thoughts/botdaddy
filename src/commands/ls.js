@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { loadRegistry, getStack, getContainerName } from '../lib/config.js';
 import { containerStatus } from '../lib/docker.js';
+import { isMac } from '../lib/platform.js';
 
 export async function ls() {
   const reg   = loadRegistry();
@@ -29,10 +30,9 @@ export async function ls() {
   for (const bot of bots) {
     const containerName = getContainerName(bot.name);
     const raw           = containerStatus(containerName) || 'no container';
-    const orbDomain     = `${stack.namespace}-${bot.name}.orb.local`;
     const isUp          = raw.startsWith('Up');
-    const gateway       = isUp
-      ? `https://${orbDomain}`
+    const gateway       = isUp && isMac
+      ? `https://${stack.namespace}-${bot.name}.orb.local`
       : `http://localhost:${bot.gatewayPort}`;
     const ports         = `${bot.devPortStart}-${bot.devPortEnd}`;
 

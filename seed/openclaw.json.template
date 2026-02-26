@@ -17,7 +17,7 @@
         "provider": "openai",
         "model": "nomic-embed-text",
         "remote": {
-          "baseUrl": "http://host.internal:11434/v1/",
+          "baseUrl": "http://host.docker.internal:11434/v1/",
           "apiKey": "ollama"
         }
       },

@@ -69,7 +69,7 @@ const PROVIDERS = {
         providerEndpoint: {
           providerKey: 'ollama',
           config: {
-            baseUrl: 'http://host.internal:11434/v1',
+            baseUrl: 'http://host.docker.internal:11434/v1',
             apiKey: 'ollama',
             api: 'openai-completions',
             models: [{

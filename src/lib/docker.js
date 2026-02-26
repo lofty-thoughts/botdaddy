@@ -143,6 +143,9 @@ export function runContainer({
   // Network
   args.push('--network', network);
 
+  // Host DNS — ensures host.docker.internal resolves on native Linux Docker
+  args.push('--add-host=host.docker.internal:host-gateway');
+
   // OrbStack domain label
   if (orbDomain) {
     args.push('--label', `dev.orbstack.domains=${orbDomain}`);

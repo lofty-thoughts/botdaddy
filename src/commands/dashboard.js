@@ -1,8 +1,8 @@
 import { findBot, getStack, getBotDir } from '../lib/config.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
 import { p } from '../lib/prompt.js';
+import { isMac, openUrl } from '../lib/platform.js';
 
 export async function dashboard(name) {
   const bot = findBot(name);
@@ -19,12 +19,17 @@ export async function dashboard(name) {
     token = config.gateway?.auth?.token || '';
   } catch {}
 
-  const orbDomain = `${stack.namespace}-${name}.orb.local`;
-  const url       = `https://${orbDomain}/#token=${token}`;
+  let url;
+  if (isMac) {
+    const orbDomain = `${stack.namespace}-${name}.orb.local`;
+    url = `https://${orbDomain}/#token=${token}`;
+  } else {
+    url = `http://localhost:${bot.gatewayPort}/#token=${token}`;
+  }
 
   p.log.info(url);
   try {
-    execSync(`open "${url}"`, { stdio: 'pipe' });
+    openUrl(url);
   } catch {
     p.log.warn('Could not open browser automatically.');
   }

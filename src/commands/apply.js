@@ -211,6 +211,8 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     config.gateway.auth.mode  = 'token';
     config.gateway.auth.token = gatewayToken;
   }
+  if (!config.gateway.controlUi) config.gateway.controlUi = {};
+  config.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
 
   // Provider-specific model config
   const model          = bot.model || providerDef.defaultModel;

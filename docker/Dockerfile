@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     ripgrep \
     tree \
+    socat \
     libvips-dev \
     postgresql-client \
     default-mysql-client \

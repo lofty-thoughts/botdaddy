@@ -150,6 +150,9 @@ export async function start(name) {
   if (bot.tailscale) {
     outroLines.push(`Tailscale: ${stack.namespace}-${name}`);
   }
+  if (bot.proxy) {
+    outroLines.push(`Proxy:     :80 -> ${bot.proxy}`);
+  }
 
   p.outro(`Bot '${name}' running.\n\n  ${outroLines.join('\n  ')}`);
 }

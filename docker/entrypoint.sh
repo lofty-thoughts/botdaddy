@@ -31,4 +31,10 @@ if [ -n "$TS_AUTHKEY" ]; then
   fi
 fi
 
+# ── Dev server proxy (only if target is provided) ─────────
+if [ -n "$PROXY_TARGET" ]; then
+  echo "[botdaddy] Proxy: forwarding :${PROXY_LISTEN_PORT:-80} -> ${PROXY_TARGET}"
+  socat TCP-LISTEN:${PROXY_LISTEN_PORT:-80},fork,reuseaddr TCP:${PROXY_TARGET} &
+fi
+
 exec "$@"

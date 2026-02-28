@@ -142,6 +142,14 @@ export function run() {
     });
 
   program
+    .command('proxy <name>')
+    .description('Configure a dev server proxy for an existing bot')
+    .action(async (name) => {
+      const { proxy } = await import('./commands/proxy.js');
+      await proxy(name);
+    });
+
+  program
     .command('rebuild [name]')
     .description('Rebuild the base image and recreate bot containers')
     .action(async (name) => {

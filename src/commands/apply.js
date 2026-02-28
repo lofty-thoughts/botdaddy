@@ -148,6 +148,18 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
       updated = updated.replace(/^TS_HOSTNAME=.*\n?/m, '');
     }
 
+    // Proxy
+    if (bot.proxy) {
+      if (/^PROXY_TARGET=.*$/m.test(updated)) {
+        updated = updated.replace(/^PROXY_TARGET=.*$/m, `PROXY_TARGET=${bot.proxy}`);
+      } else {
+        updated += `\n# Dev server proxy\nPROXY_TARGET=${bot.proxy}\n`;
+      }
+    } else {
+      updated = updated.replace(/\n# Dev server proxy\nPROXY_TARGET=.*\n?/, '');
+      updated = updated.replace(/^PROXY_TARGET=.*\n?/m, '');
+    }
+
     writeFileSync(envPath, updated);
   } else {
     gatewayToken     = genToken();
@@ -168,6 +180,10 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
         const tsHostname = `${stack.namespace}-${name}`;
         envContent += `\n# Tailscale\nTS_AUTHKEY=${tsKey}\nTS_HOSTNAME=${tsHostname}\n`;
       }
+    }
+
+    if (bot.proxy) {
+      envContent += `\n# Dev server proxy\nPROXY_TARGET=${bot.proxy}\n`;
     }
 
     writeFileSync(envPath, envContent);

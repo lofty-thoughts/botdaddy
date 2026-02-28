@@ -45,6 +45,16 @@ Tailscale is installed in the Docker image and started conditionally by `entrypo
 - **Non-blocking**: if Tailscale fails to connect, the gateway still starts normally.
 - The `botdaddy tailscale` command recreates the container (for capability changes) but does **not** rebuild the image — Tailscale is always installed in the base image.
 
+## Dev server proxy
+
+Socat is installed in the Docker image and started conditionally by `entrypoint.sh` when `PROXY_TARGET` is present in the environment. This forwards port 80 inside the container to an arbitrary upstream target, making dev servers accessible via the bot's Tailscale vanity URL or OrbStack domain.
+
+- **Target** stored in `botdaddy.json` as `proxy: "hostname:port"` on the bot entry, baked into per-bot `.env` by apply.
+- **Listen port** defaults to 80; override with `PROXY_LISTEN_PORT` env var if needed.
+- **No extra capabilities** needed (unlike Tailscale). Enabling/disabling proxy only requires a container restart, not recreation.
+- **Non-blocking**: if socat fails, the gateway still starts normally.
+- The `botdaddy proxy` command updates the registry and restarts the container but does **not** rebuild the image — socat is always installed in the base image.
+
 ## IDE remote server persistence
 
 VS Code and Cursor remote SSH connections download a server + extensions to `/root/.vscode-server` and `/root/.cursor-server`. These are volume-mounted from `${botDir}/.vscode-server` and `${botDir}/.cursor-server` so they survive container recreations. The directories are created unconditionally by `apply` and mounted by `start.js`.
@@ -64,6 +74,7 @@ The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything 
 - **Claude Code** (`claude`) for agentic coding.
 - **agent-browser** with Chromium pre-downloaded (`agent-browser install --with-deps`).
 - **ripgrep** (`rg`) and **tree** for fast code search and directory visualization.
+- **socat** for TCP proxying (used by the dev server proxy feature).
 - **Cursor sandbox AppArmor profile** (`cursor-sandbox-apparmor`) so Cursor's remote terminal tooling works without user-namespace permission errors.
 
 When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot. Rebuild also syncs seed skills into all targeted bot workspaces.

@@ -269,6 +269,53 @@ export async function config(name) {
     }
   }
 
+  // ── Proxy ────────────────────────────────────────────────
+  const currentProxy = existing?.proxy || '';
+  let proxyTarget;
+
+  if (currentProxy) {
+    p.log.info(`Current proxy target: ${currentProxy}`);
+    const change = guard(await p.confirm({
+      message: 'Change proxy?',
+      initialValue: false,
+    }));
+    if (change) {
+      const disable = guard(await p.confirm({
+        message: 'Disable proxy?',
+        initialValue: false,
+      }));
+      if (disable) {
+        proxyTarget = false;
+      } else {
+        proxyTarget = guard(await p.text({
+          message: 'Proxy target (host:port)',
+          initialValue: currentProxy,
+          validate: v => !v.includes(':') ? 'Must include port (e.g. myservice:80)' : undefined,
+        }));
+      }
+    } else {
+      proxyTarget = currentProxy;
+    }
+  } else {
+    const setup = guard(await p.confirm({
+      message: 'Set up dev server proxy?',
+      initialValue: false,
+    }));
+    if (setup) {
+      p.log.info('Enter the upstream target to proxy to port 80 (e.g. my-laravel-app-1:80)');
+      proxyTarget = guard(await p.text({
+        message: 'Proxy target (host:port)',
+        validate: v => {
+          if (!v.trim()) return 'Target is required';
+          if (!v.includes(':')) return 'Must include port (e.g. myservice:80)';
+          return undefined;
+        },
+      }));
+    } else {
+      proxyTarget = false;
+    }
+  }
+
   // ── Build + save entry ─────────────────────────────────────
   const portInfo = existing
     ? { portSlot: existing.portSlot, gatewayPort: existing.gatewayPort, devPortStart: existing.devPortStart, devPortEnd: existing.devPortEnd }
@@ -284,6 +331,7 @@ export async function config(name) {
     mattermost,
     telegram,
     tailscale,
+    proxy: proxyTarget,
     createdAt: existing?.createdAt || today,
     model,
   };

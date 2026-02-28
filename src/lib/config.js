@@ -94,8 +94,6 @@ export function validateName(name) {
     return 'Name must start with a letter and contain only letters, numbers, hyphens, underscores';
   }
   if (findBot(name)) return `Bot '${name}' already exists in botdaddy.json`;
-  const botDir = getBotDir(name);
-  if (existsSync(botDir)) return `${botDir} already exists on disk`;
   return null;
 }
 

@@ -80,11 +80,6 @@ RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
     && apt-get install -y tailscale \
     && rm -rf /var/lib/apt/lists/*
 
-# Cursor remote terminal sandbox (AppArmor profile for user namespaces)
-RUN curl -fsSL https://downloads.cursor.com/lab/enterprise/cursor-sandbox-apparmor_0.2.0_all.deb -o /tmp/cursor-sandbox-apparmor.deb \
-    && dpkg -i /tmp/cursor-sandbox-apparmor.deb \
-    && rm /tmp/cursor-sandbox-apparmor.deb
-
 # Node.js (latest LTS via nvm) + global npm packages
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash \
     && . $NVM_DIR/nvm.sh \

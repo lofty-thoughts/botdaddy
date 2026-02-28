@@ -75,7 +75,7 @@ The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything 
 - **agent-browser** with Chromium pre-downloaded (`agent-browser install --with-deps`).
 - **ripgrep** (`rg`) and **tree** for fast code search and directory visualization.
 - **socat** for TCP proxying (used by the dev server proxy feature).
-- **Cursor sandbox AppArmor profile** (`cursor-sandbox-apparmor`) so Cursor's remote terminal tooling works without user-namespace permission errors.
+- Containers run with `--security-opt apparmor=unconfined` so Cursor's terminal sandbox can use user namespaces.
 
 When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot. Rebuild also syncs seed skills into all targeted bot workspaces.
 

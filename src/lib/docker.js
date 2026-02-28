@@ -115,6 +115,8 @@ export function runContainer({
     // Volume mounts
     '-v', `${botDir}:/root/.openclaw`,
     '-v', '/var/run/docker.sock:/var/run/docker.sock',
+    // Disable AppArmor (allows Cursor terminal sandbox to use user namespaces)
+    '--security-opt', 'apparmor=unconfined',
     // Gateway port
     '-p', `${gatewayPort}:18789`,
   ];

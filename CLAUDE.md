@@ -64,6 +64,7 @@ The Docker image (`docker/Dockerfile`) is a "kitchen sink" base with everything 
 - **Claude Code** (`claude`) for agentic coding.
 - **agent-browser** with Chromium pre-downloaded (`agent-browser install --with-deps`).
 - **ripgrep** (`rg`) and **tree** for fast code search and directory visualization.
+- **Cursor sandbox AppArmor profile** (`cursor-sandbox-apparmor`) so Cursor's remote terminal tooling works without user-namespace permission errors.
 
 When the Dockerfile changes, run `botdaddy rebuild` to rebuild the image and recreate all bot containers. Use `botdaddy rebuild <name>` to target a single bot. Rebuild also syncs seed skills into all targeted bot workspaces.
 

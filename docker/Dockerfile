@@ -79,6 +79,11 @@ RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
     && apt-get install -y tailscale \
     && rm -rf /var/lib/apt/lists/*
 
+# Cursor remote terminal sandbox (AppArmor profile for user namespaces)
+RUN curl -fsSL https://downloads.cursor.com/lab/enterprise/cursor-sandbox-apparmor_0.2.0_all.deb -o /tmp/cursor-sandbox-apparmor.deb \
+    && dpkg -i /tmp/cursor-sandbox-apparmor.deb \
+    && rm /tmp/cursor-sandbox-apparmor.deb
+
 # Pin all versions as build args
 ARG NVM_VERSION=0.40.4
 ARG NODE_VERSION=24.13.1

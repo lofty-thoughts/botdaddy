@@ -85,16 +85,12 @@ RUN curl -fsSL https://downloads.cursor.com/lab/enterprise/cursor-sandbox-apparm
     && dpkg -i /tmp/cursor-sandbox-apparmor.deb \
     && rm /tmp/cursor-sandbox-apparmor.deb
 
-# Pin all versions as build args
-ARG NVM_VERSION=0.40.4
-ARG NODE_VERSION=24.13.1
-ARG OPENCLAW_VERSION=2026.2.12
-
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash \
+# Node.js (latest LTS via nvm) + global npm packages
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
-    && nvm install ${NODE_VERSION} \
-    && nvm use ${NODE_VERSION} \
-    && npm install -g openclaw@${OPENCLAW_VERSION} typescript tsx agent-browser @anthropic-ai/claude-code \
+    && nvm install --lts \
+    && nvm use --lts \
+    && npm install -g openclaw typescript tsx agent-browser @anthropic-ai/claude-code \
     && ln -s $(which node) /usr/local/bin/node \
     && ln -s $(which npm) /usr/local/bin/npm \
     && ln -s $(which npx) /usr/local/bin/npx \

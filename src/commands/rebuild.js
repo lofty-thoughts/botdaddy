@@ -24,7 +24,7 @@ export async function rebuild(name) {
   // ── Rebuild image ──────────────────────────────────────────
   const s = p.spinner();
   s.start(`Building image '${stack.imageName}'...`);
-  buildImage(stack.imageName, dockerDir);
+  await buildImage(stack.imageName, dockerDir);
   s.stop(`Image '${stack.imageName}' rebuilt`);
 
   // ── Determine which bots to recreate ───────────────────────

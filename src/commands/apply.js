@@ -50,7 +50,7 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   if (!imageExists(stack.imageName)) {
     const s = quiet ? null : p.spinner();
     s?.start(`Building image '${stack.imageName}'...`);
-    buildImage(stack.imageName, dockerDir);
+    await buildImage(stack.imageName, dockerDir);
     s?.stop(`Built image '${stack.imageName}'`);
   }
 
@@ -247,7 +247,7 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     const s = quiet ? null : p.spinner();
     s?.start('Running openclaw onboard...');
     try {
-      runOneShotContainer({
+      await runOneShotContainer({
         containerName,
         imageName: stack.imageName,
         botDir,

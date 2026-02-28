@@ -22,14 +22,18 @@ export function imageExists(imageName) {
   }
 }
 
-/** Build the base image from the docker/ directory */
+/** Build the base image from the docker/ directory (async so spinner can animate) */
 export function buildImage(imageName, dockerDir) {
-  try {
-    execSync(`docker build -t ${imageName} ${dockerDir}`, { stdio: 'pipe' });
-  } catch (err) {
-    const detail = err.stderr?.toString().trim() || err.message;
-    throw new Error(detail);
-  }
+  return new Promise((resolve, reject) => {
+    const child = spawn('docker', ['build', '-t', imageName, dockerDir], { stdio: 'pipe' });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('close', (code) => {
+      if (code !== 0) reject(new Error(stderr.trim() || `docker build exited with code ${code}`));
+      else resolve();
+    });
+    child.on('error', reject);
+  });
 }
 
 /** Check if a container exists (running or stopped) */
@@ -157,7 +161,7 @@ export function runContainer({
   execSync(`docker ${args.join(' ')}`, { stdio: 'pipe' });
 }
 
-/** Run a one-shot container (for onboard) */
+/** Run a one-shot container (for onboard — async so spinner can animate) */
 export function runOneShotContainer({ containerName, imageName, botDir, envFile, command }) {
   const args = [
     'run', '--rm',
@@ -167,12 +171,16 @@ export function runOneShotContainer({ containerName, imageName, botDir, envFile,
     imageName,
     ...command,
   ];
-  try {
-    execSync(`docker ${args.join(' ')}`, { stdio: 'pipe' });
-  } catch (err) {
-    const detail = err.stderr?.toString().trim() || err.message;
-    throw new Error(detail);
-  }
+  return new Promise((resolve, reject) => {
+    const child = spawn('docker', args, { stdio: 'pipe' });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('close', (code) => {
+      if (code !== 0) reject(new Error(stderr.trim() || `docker run exited with code ${code}`));
+      else resolve();
+    });
+    child.on('error', reject);
+  });
 }
 
 /** Follow container logs (interactive — spawns attached process) */

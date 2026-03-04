@@ -59,9 +59,9 @@ bots/<name>/                               (per-bot data — gitignored)
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
         │
-        │  docker run -v bots/<name>:/root/.openclaw --env-file .env
+        │  docker run -v bots/<name>:/workspace --env-file .env
         ▼
-CONTAINER (/root/.openclaw)
+CONTAINER (/workspace)
 ═══════════════════════════════════════════════════════════════════════
   Same files — volume-mounted, not copied.
   OpenClaw reads openclaw.json + env vars at startup.
@@ -114,7 +114,7 @@ botdaddy rebuild [name]
 
 botdaddy start [name]
   reads:  botdaddy.json (ports, name)
-  action: docker run (mounts bots/<name>/ → /root/.openclaw)
+  action: docker run (mounts bots/<name>/ → /workspace)
   note:   starts all bots if no name given
 
 botdaddy destroy <name>

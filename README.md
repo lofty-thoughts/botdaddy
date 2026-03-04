@@ -190,7 +190,7 @@ bots/<name>/
   agents/                   # agent identity and sessions
 ```
 
-Each bot's data directory is volume-mounted into its container at `/root/.openclaw`. The `.vscode-server` and `.cursor-server` directories are mounted separately at `/root/` so IDE remote connections survive container recreations.
+Each bot's data directory is volume-mounted into its container at `/workspace`. The `.vscode-server` and `.cursor-server` directories are mounted separately into the `coder` user's home (`/home/coder/`) so IDE remote connections survive container recreations. Containers run the main process as the `coder` user (UID 1000) via `gosu`, with passwordless `sudo` available when needed.
 
 ## Skills
 

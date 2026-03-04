@@ -24,7 +24,7 @@
       "compaction": {
         "mode": "safeguard"
       },
-      "workspace": "/root/.openclaw/workspace"
+      "workspace": "/workspace/workspace"
     }
   },
   "gateway": {

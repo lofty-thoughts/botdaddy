@@ -32,8 +32,8 @@ async function startBot(bot, name, stack, s) {
     s.start(`Creating ${name}...`);
 
     const extraVolumes = [
-      `${join(botDir, '.vscode-server')}:/root/.vscode-server`,
-      `${join(botDir, '.cursor-server')}:/root/.cursor-server`,
+      `${join(botDir, '.vscode-server')}:/home/coder/.vscode-server`,
+      `${join(botDir, '.cursor-server')}:/home/coder/.cursor-server`,
     ];
 
     if (bot.tailscale) {

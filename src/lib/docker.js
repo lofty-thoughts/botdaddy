@@ -113,7 +113,7 @@ export function runContainer({
     '--restart', 'unless-stopped',
     '--env-file', envFile,
     // Volume mounts
-    '-v', `${botDir}:/root/.openclaw`,
+    '-v', `${botDir}:/workspace`,
     '-v', '/var/run/docker.sock:/var/run/docker.sock',
     // Disable AppArmor (allows Cursor terminal sandbox to use user namespaces)
     '--security-opt', 'apparmor=unconfined',
@@ -169,7 +169,7 @@ export function runOneShotContainer({ containerName, imageName, botDir, envFile,
     'run', '--rm',
     '--name', `${containerName}-onboard`,
     '--env-file', envFile,
-    '-v', `${botDir}:/root/.openclaw`,
+    '-v', `${botDir}:/workspace`,
     imageName,
     ...command,
   ];
@@ -198,7 +198,7 @@ export function followLogs(containerName) {
 /** Exec into a container with interactive shell */
 export function execShell(containerName) {
   try {
-    execFileSync('docker', ['exec', '-it', containerName, 'bash'], { stdio: 'inherit' });
+    execFileSync('docker', ['exec', '-it', '-u', 'coder', '-w', '/workspace', containerName, 'bash'], { stdio: 'inherit' });
   } catch {
     // Normal exit from shell — ignore
   }

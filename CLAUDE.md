@@ -55,9 +55,18 @@ Socat is installed in the Docker image and started conditionally by `entrypoint.
 - **Non-blocking**: if socat fails, the gateway still starts normally.
 - The `botdaddy proxy` command updates the registry and restarts the container but does **not** rebuild the image — socat is always installed in the base image.
 
+## Container user model
+
+Containers use a **hybrid root/coder** approach. The entrypoint runs as root for privileged setup (Tailscale, socat), then drops to the `coder` user (UID 1000) via `gosu` for the main process. The `coder` user has passwordless sudo and is in the `docker` group.
+
+- **Workspace mount**: bot data mounts to `/workspace` (not a user home directory). WORKDIR is `/workspace`.
+- **Shell access**: `botdaddy shell` execs as `coder` in `/workspace`. Tailscale SSH: `ssh coder@<hostname>`.
+- **Root access**: Use `sudo` inside the container when needed. `execInContainer()` still runs as root for system-level operations (e.g. `tailscale logout`).
+- **Claude Code**: runs as `coder`, so `--dangerously-skip-permissions` works (no root rejection).
+
 ## IDE remote server persistence
 
-VS Code and Cursor remote SSH connections download a server + extensions to `/root/.vscode-server` and `/root/.cursor-server`. These are volume-mounted from `${botDir}/.vscode-server` and `${botDir}/.cursor-server` so they survive container recreations. The directories are created unconditionally by `apply` and mounted by `start.js`.
+VS Code and Cursor remote SSH connections download a server + extensions to `/home/coder/.vscode-server` and `/home/coder/.cursor-server`. These are volume-mounted from `${botDir}/.vscode-server` and `${botDir}/.cursor-server` so they survive container recreations. The directories are created unconditionally by `apply` and mounted by `start.js`.
 
 ## Base image tooling
 

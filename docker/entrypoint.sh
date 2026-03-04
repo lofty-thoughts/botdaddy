@@ -2,9 +2,9 @@
 # Runtime config from environment variables
 # These survive container recreates without needing a rebuild
 
-# Git identity (for workspace backup commits)
-git config --global user.name "${GIT_USER_NAME:-Agent}"
-git config --global user.email "${GIT_USER_EMAIL:-agent@openclaw.local}"
+# Git identity for coder user (for workspace backup commits)
+su -c "git config --global user.name '${GIT_USER_NAME:-Agent}'" coder
+su -c "git config --global user.email '${GIT_USER_EMAIL:-agent@openclaw.local}'" coder
 
 # ── Tailscale (only if auth key is provided) ────────────────
 if [ -n "$TS_AUTHKEY" ]; then
@@ -37,4 +37,7 @@ if [ -n "$PROXY_TARGET" ]; then
   socat TCP-LISTEN:${PROXY_LISTEN_PORT:-80},fork,reuseaddr TCP:${PROXY_TARGET} &
 fi
 
-exec "$@"
+# Ensure coder owns the workspace mount root
+chown -f coder:coder /workspace
+
+exec gosu coder "$@"

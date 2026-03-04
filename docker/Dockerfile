@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y \
     ripgrep \
     tree \
     socat \
+    sudo \
+    gosu \
     libvips-dev \
     postgresql-client \
     default-mysql-client \
@@ -98,7 +100,12 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | b
 # agent-browser: download Chromium + install Linux system dependencies
 RUN . $NVM_DIR/nvm.sh && agent-browser install --with-deps
 
-WORKDIR /root/.openclaw
+# Non-root user for day-to-day work (claude code, coding, shell access)
+RUN groupadd docker || true \
+    && useradd -m -s /bin/bash -G sudo,docker -u 1000 coder \
+    && echo 'coder ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/coder
+
+WORKDIR /workspace
 EXPOSE 18789
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

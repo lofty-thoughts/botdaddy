@@ -54,6 +54,7 @@ botdaddy dashboard mybot
 | `mattermost <name>` | Provision or re-provision Mattermost for a bot |
 | `telegram <name>` | Configure Telegram for a bot |
 | `tailscale <name>` | Configure Tailscale for a bot |
+| `proxy <name>` | Configure a dev server proxy for a bot |
 | `approve <name> <channel> <code>` | Approve a channel pairing code |
 | `rebuild [name]` | Rebuild the base image and recreate bot containers |
 | `destroy <name>` | Stop and remove a bot (optionally delete data) |
@@ -186,6 +187,7 @@ bots/<name>/
   .vscode-server/           # VS Code remote server + extensions (persisted)
   .cursor-server/           # Cursor remote server + extensions (persisted)
   workspace/                # agent workspace (git repo)
+    memory/                 # agent long-term memory
     skills/                 # seeded skills (agent-browser, coding-agent, marketing, etc.)
   agents/                   # agent identity and sessions
 ```
@@ -220,7 +222,7 @@ The base Docker image is a "kitchen sink" build with everything pre-installed so
 - **Python 3** with pip and venv
 - **PHP 8.2, 8.3, 8.4** (via [Ondrej Sury PPA](https://launchpad.net/~ondrej/+archive/ubuntu/php)) with common extensions (mbstring, xml, curl, zip, mysql, sqlite3, pgsql, gd, intl, bcmath, readline, redis, memcached, xdebug)
 - **Composer** (PHP package manager)
-- **Node.js** (pinned version via nvm), **TypeScript**, **tsx**
+- **Node.js** (latest LTS via nvm), **TypeScript**, **tsx**
 
 **Libraries:**
 - **libvips** — native image processing for [sharp](https://sharp.pixelplumbing.com) (used by Next.js, Astro)
@@ -261,6 +263,19 @@ botdaddy start mybot      # start on the new image
 ## Docker-out-of-Docker
 
 Bots can spawn sibling containers via the host Docker socket (`/var/run/docker.sock`). Each bot is allocated a 10-port dev range for this purpose, documented in its workspace `TOOLS.md`.
+
+## Dev Server Proxy
+
+Forward a port inside the container to an upstream target, making dev servers accessible via the bot's Tailscale vanity URL or OrbStack domain.
+
+```sh
+# Add a proxy to an existing bot
+botdaddy proxy mybot
+
+# The bot's port 80 will forward to the target (e.g. host.docker.internal:3000)
+```
+
+Enabling or disabling the proxy only requires a container restart, not recreation.
 
 ## Multi-Instance
 

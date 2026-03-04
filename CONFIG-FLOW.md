@@ -25,6 +25,7 @@ botdaddy.json                              (bot registry — gitignored)
 │   mattermost (url|bool)     │
 │   telegram (bool)           │
 │   tailscale (bool)          │
+│   proxy (host:port|false)   │
 │   createdAt                 │
 └─────────────────────────────┘
 
@@ -40,6 +41,7 @@ bots/<name>/                               (per-bot data — gitignored)
 │  │ BOTDADDY_DEV_PORT_START/END               │                  │
 │  │ TS_AUTHKEY         ◄── if tailscale      │                  │
 │  │ TS_HOSTNAME                               │                  │
+│  │ PROXY_TARGET       ◄── if proxy         │                  │
 │  └───────────────────────────────────────────┘                  │
 │                                                                 │
 │  openclaw.json                (OpenClaw config — single source) │
@@ -106,6 +108,10 @@ botdaddy tailscale <name>
   removes:  container (capabilities change requires recreation)
   writes: botdaddy.json (tailscale: true)
   calls:  apply → writes TS_AUTHKEY/TS_HOSTNAME to .env
+
+botdaddy proxy <name>
+  writes: botdaddy.json (proxy: "host:port" or false)
+  calls:  apply → writes PROXY_TARGET to .env, restarts
 
 botdaddy rebuild [name]
   rebuilds: Docker image from docker/Dockerfile

@@ -50,7 +50,10 @@ export function saveRegistry(data) {
 
 export function getStack() {
   const reg = loadRegistry();
-  return { ...DEFAULT_REGISTRY.stack, ...reg.stack };
+  const stack = { ...DEFAULT_REGISTRY.stack, ...reg.stack };
+  if (process.env.BOTDADDY_NAMESPACE) stack.namespace = process.env.BOTDADDY_NAMESPACE;
+  if (process.env.BOTDADDY_BASE_PORT) stack.basePort = Number(process.env.BOTDADDY_BASE_PORT);
+  return stack;
 }
 
 // ─── Bot lookup ──────────────────────────────────────────────

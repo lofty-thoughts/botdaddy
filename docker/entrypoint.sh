@@ -3,8 +3,8 @@
 # These survive container recreates without needing a rebuild
 
 # Git identity for coder user (for workspace backup commits)
-su -c "git config --global user.name '${GIT_USER_NAME:-Agent}'" coder
-su -c "git config --global user.email '${GIT_USER_EMAIL:-agent@openclaw.local}'" coder
+su -c "git config --global user.name '${GIT_USER_NAME:-bot}'" coder
+su -c "git config --global user.email '${GIT_USER_EMAIL:-bot@botdaddy.local}'" coder
 
 # ── Tailscale (only if auth key is provided) ────────────────
 if [ -n "$TS_AUTHKEY" ]; then

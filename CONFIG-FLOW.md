@@ -1,4 +1,4 @@
-# Botdaddy Config Flow
+# BotDaddy Config Flow
 
 ## Where Config Lives
 

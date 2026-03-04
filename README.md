@@ -1,4 +1,8 @@
-# botdaddy
+<p align="center">
+  <img src="seahorse.png" height="100" alt="BotDaddy">
+</p>
+
+# BotDaddy
 
 CLI for managing isolated [OpenClaw](https://openclaw.ai) agent instances in Docker containers. Each bot gets its own container, workspace, config, and optionally Mattermost, Telegram, or Tailscale integration.
 
@@ -279,7 +283,7 @@ Enabling or disabling the proxy only requires a container restart, not recreatio
 
 ## Multi-Instance
 
-Multiple independent stacks can coexist by setting environment variables before running:
+Multiple independent BotDaddy stacks can coexist by setting environment variables before running:
 
 ```sh
 BOTDADDY_NAMESPACE=team2 BOTDADDY_BASE_PORT=20000 BOTDADDY_HOME=~/.botdaddy-team2 botdaddy config mybot

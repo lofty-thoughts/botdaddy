@@ -1,8 +1,8 @@
-# CLAUDE.md — botdaddy developer notes
+# CLAUDE.md — BotDaddy developer notes
 
 ## Multi-instance is a first-class requirement
 
-Multiple independent botdaddy stacks must be able to coexist on the same machine at all times. Never hardcode namespaces, ports, paths, image names, or container names. Everything derives from `getStack()` which reads from `botdaddy.json` and respects env var overrides:
+Multiple independent BotDaddy stacks must be able to coexist on the same machine at all times. Never hardcode namespaces, ports, paths, image names, or container names. Everything derives from `getStack()` which reads from `botdaddy.json` and respects env var overrides:
 
 ```sh
 BOTDADDY_NAMESPACE=team2 BOTDADDY_BASE_PORT=20000 BOTDADDY_HOME=~/.botdaddy-team2 botdaddy config mybot

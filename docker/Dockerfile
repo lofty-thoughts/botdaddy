@@ -102,6 +102,7 @@ RUN . $NVM_DIR/nvm.sh && agent-browser install --with-deps
 
 # Non-root user for day-to-day work (claude code, coding, shell access)
 RUN groupadd docker || true \
+    && userdel -r ubuntu 2>/dev/null || true \
     && useradd -m -s /bin/bash -G sudo,docker -u 1000 coder \
     && echo 'coder ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/coder
 

@@ -191,33 +191,23 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
     log('Generated .env');
   }
 
-  // ── Generate / update openclaw.json ────────────────────────
+  // ── Generate openclaw.json (built fresh from template each time) ──
   const configPath = join(botDir, 'openclaw.json');
-  let config;
 
+  // Preserve channel credentials from existing config (set by openclaw pairing)
+  let existing = null;
   if (existsSync(configPath)) {
-    config = JSON.parse(readFileSync(configPath, 'utf8'));
-  } else {
-    const tmpl = readFileSync(join(SEED_ROOT, 'openclaw.json.template'), 'utf8');
-    config     = JSON.parse(tmpl.replaceAll('{{OPENCLAW_GATEWAY_TOKEN}}', gatewayToken));
-    log('Created openclaw.json');
+    existing = JSON.parse(readFileSync(configPath, 'utf8'));
   }
 
-  // Ensure gateway config
-  if (!config.gateway) config.gateway = {};
-  config.gateway.trustedProxies = config.gateway.trustedProxies || ['192.168.0.0/16'];
-  if (!config.gateway.auth?.token) {
-    if (!config.gateway.auth) config.gateway.auth = {};
-    config.gateway.auth.mode  = 'token';
-    config.gateway.auth.token = gatewayToken;
-  }
-  if (!config.gateway.controlUi) config.gateway.controlUi = {};
-  config.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
+  const tmpl = readFileSync(join(SEED_ROOT, 'openclaw.json.template'), 'utf8');
+  const config = JSON.parse(tmpl.replaceAll('{{OPENCLAW_GATEWAY_TOKEN}}', gatewayToken));
 
-  // Ensure tools profile (coding = fs + runtime) — top-level key
-  if (!config.tools) config.tools = {};
-  if (!config.tools.profile) config.tools.profile = 'coding';
-  delete config.agents.defaults.tools; // cleanup from earlier misplacement
+  // Gateway — preserve existing token if present
+  if (existing?.gateway?.auth?.token) {
+    config.gateway.auth.token = existing.gateway.auth.token;
+  }
+  config.gateway.trustedProxies = ['192.168.0.0/16'];
 
   // Provider-specific model config
   const model          = bot.model || providerDef.defaultModel;
@@ -231,33 +221,36 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   };
 
   if (providerConfig.providerEndpoint) {
-    if (!config.models) config.models = {};
-    config.models.mode = 'merge';
-    if (!config.models.providers) config.models.providers = {};
-    config.models.providers[providerConfig.providerEndpoint.providerKey] =
-      providerConfig.providerEndpoint.config;
+    config.models = {
+      mode: 'merge',
+      providers: {
+        [providerConfig.providerEndpoint.providerKey]: providerConfig.providerEndpoint.config,
+      },
+    };
   }
 
-  // Channel configs
-  if (!config.channels) config.channels = {};
-  if (!config.plugins)  config.plugins  = {};
-  if (!config.plugins.entries) config.plugins.entries = {};
+  // Channel configs — merge credentials from existing pairing data
+  const channels = {};
+  const pluginEntries = {};
 
   if (bot.mattermost) {
-    config.channels.mattermost        = { ...config.channels.mattermost, enabled: true };
-    config.plugins.entries.mattermost = { enabled: true };
+    channels.mattermost    = { ...existing?.channels?.mattermost, enabled: true };
+    pluginEntries.mattermost = { enabled: true };
   } else {
-    if (config.channels.mattermost)        config.channels.mattermost.enabled        = false;
-    if (config.plugins.entries.mattermost) config.plugins.entries.mattermost.enabled = false;
+    if (existing?.channels?.mattermost) channels.mattermost = { ...existing.channels.mattermost, enabled: false };
+    if (existing?.plugins?.entries?.mattermost) pluginEntries.mattermost = { enabled: false };
   }
 
   if (bot.telegram) {
-    config.channels.telegram        = { ...config.channels.telegram, enabled: true, groupPolicy: 'disabled' };
-    config.plugins.entries.telegram = { enabled: true };
+    channels.telegram    = { ...existing?.channels?.telegram, enabled: true, groupPolicy: 'disabled' };
+    pluginEntries.telegram = { enabled: true };
   } else {
-    if (config.channels.telegram)        config.channels.telegram.enabled        = false;
-    if (config.plugins.entries.telegram) config.plugins.entries.telegram.enabled = false;
+    if (existing?.channels?.telegram) channels.telegram = { ...existing.channels.telegram, enabled: false };
+    if (existing?.plugins?.entries?.telegram) pluginEntries.telegram = { enabled: false };
   }
+
+  if (Object.keys(channels).length)       config.channels        = channels;
+  if (Object.keys(pluginEntries).length) { config.plugins = { entries: pluginEntries }; }
 
   writeFileSync(configPath, JSON.stringify(config, null, 2));
   log('Updated openclaw.json');

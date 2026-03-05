@@ -247,7 +247,7 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   }
 
   if (bot.telegram) {
-    config.channels.telegram        = { ...config.channels.telegram, enabled: true };
+    config.channels.telegram        = { ...config.channels.telegram, enabled: true, groupPolicy: 'disabled' };
     config.plugins.entries.telegram = { enabled: true };
   } else {
     if (config.channels.telegram)        config.channels.telegram.enabled        = false;

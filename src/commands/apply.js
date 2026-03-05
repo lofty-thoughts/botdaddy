@@ -214,9 +214,10 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   if (!config.gateway.controlUi) config.gateway.controlUi = {};
   config.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
 
-  // Ensure tools profile (coding = fs + runtime)
+  // Ensure tools profile (coding = fs + runtime) — top-level key
   if (!config.tools) config.tools = {};
   if (!config.tools.profile) config.tools.profile = 'coding';
+  delete config.agents.defaults.tools; // cleanup from earlier misplacement
 
   // Provider-specific model config
   const model          = bot.model || providerDef.defaultModel;

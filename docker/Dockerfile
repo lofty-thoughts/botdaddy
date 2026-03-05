@@ -109,6 +109,10 @@ RUN groupadd docker || true \
     && useradd -m -s /bin/bash -G sudo,docker -u 1000 coder \
     && echo 'coder ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/coder
 
+# OpenClaw reads config from ~/.openclaw/openclaw.json by default;
+# point it at the volume-mounted config instead.
+ENV OPENCLAW_CONFIG_PATH=/workspace/openclaw.json
+
 WORKDIR /workspace
 EXPOSE 18789
 

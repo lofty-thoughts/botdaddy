@@ -205,8 +205,9 @@ export function execShell(containerName) {
 }
 
 /** Exec a command in a container */
-export function execInContainer(containerName, command) {
-  execSync(`docker exec ${containerName} ${command}`, { stdio: 'inherit' });
+export function execInContainer(containerName, command, { user } = {}) {
+  const userFlag = user ? `-u ${user} ` : '';
+  execSync(`docker exec ${userFlag}${containerName} ${command}`, { stdio: 'inherit' });
 }
 
 /** Ensure a Docker network exists */

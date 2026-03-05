@@ -18,5 +18,5 @@ export async function approve(name, channel, code) {
 
   p.log.step(`Approving ${channel} pairing for '${name}'...`);
   // stdio:'inherit' intentional — openclaw pairing output is user-facing feedback
-  execInContainer(containerName, `openclaw pairing approve ${channel} ${code}`);
+  execInContainer(containerName, `openclaw pairing approve ${channel} ${code}`, { user: 'coder' });
 }

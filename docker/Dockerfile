@@ -97,6 +97,9 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | b
     && ln -s $(which agent-browser) /usr/local/bin/agent-browser \
     && ln -s $(which claude) /usr/local/bin/claude
 
+# Make nvm dir traversable so /usr/local/bin symlinks work for non-root users
+RUN chmod a+rx /root
+
 # agent-browser: download Chromium + install Linux system dependencies
 RUN . $NVM_DIR/nvm.sh && agent-browser install --with-deps
 

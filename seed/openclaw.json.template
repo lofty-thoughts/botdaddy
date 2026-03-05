@@ -24,7 +24,10 @@
       "compaction": {
         "mode": "safeguard"
       },
-      "workspace": "/workspace/workspace"
+      "workspace": "/workspace/workspace",
+      "tools": {
+        "profile": "coding"
+      }
     }
   },
   "gateway": {

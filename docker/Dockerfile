@@ -87,7 +87,7 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | b
     && . $NVM_DIR/nvm.sh \
     && nvm install --lts \
     && nvm use --lts \
-    && npm install -g openclaw typescript tsx agent-browser @anthropic-ai/claude-code \
+    && npm install -g openclaw@2026.3.2 typescript tsx agent-browser @anthropic-ai/claude-code \
     && ln -s $(which node) /usr/local/bin/node \
     && ln -s $(which npm) /usr/local/bin/npm \
     && ln -s $(which npx) /usr/local/bin/npx \

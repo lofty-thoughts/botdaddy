@@ -215,8 +215,8 @@ export async function apply(name, { quiet = false, spinner = null } = {}) {
   config.gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback = true;
 
   // Ensure tools profile (coding = fs + runtime)
-  if (!config.agents.defaults.tools) config.agents.defaults.tools = {};
-  if (!config.agents.defaults.tools.profile) config.agents.defaults.tools.profile = 'coding';
+  if (!config.tools) config.tools = {};
+  if (!config.tools.profile) config.tools.profile = 'coding';
 
   // Provider-specific model config
   const model          = bot.model || providerDef.defaultModel;

@@ -24,11 +24,11 @@
       "compaction": {
         "mode": "safeguard"
       },
-      "workspace": "/workspace/workspace",
-      "tools": {
-        "profile": "coding"
-      }
+      "workspace": "/workspace/workspace"
     }
+  },
+  "tools": {
+    "profile": "coding"
   },
   "gateway": {
     "mode": "local",
